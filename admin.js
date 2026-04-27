@@ -4,16 +4,27 @@ const formMessage = document.querySelector("#form-message");
 const resetButton = document.querySelector("#reset-form");
 const productList = document.querySelector("#admin-product-list");
 const searchInput = document.querySelector("#search");
+const loginForm = document.querySelector("#login-form");
+const loginMessage = document.querySelector("#login-message");
+const loginSection = document.querySelector("#login-section");
+const adminContent = document.querySelector("#admin-content");
 const fields = ["product-id", "name", "category", "price", "stock", "image", "details", "active"].reduce(
   (items, id) => ({ ...items, [id]: document.getElementById(id) }),
   {}
 );
 
+const ADMIN_PASSWORD = '1234567899';
+
 let products = [];
+let isAuthenticated = false;
+
+function getAuthHeaders() {
+  return isAuthenticated ? { "X-Admin-Password": ADMIN_PASSWORD } : {};
+}
 
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     ...options,
   });
   const data = await response.json().catch(() => ({}));
@@ -153,6 +164,20 @@ productList.addEventListener("click", async (event) => {
   if (button.dataset.action === "delete" && product && confirm(`Delete ${product.name}?`)) {
     await requestJson(`/api/products/${product.id}`, { method: "DELETE" });
     await loadProducts();
+  }
+});
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const password = document.querySelector("#login-password").value;
+  if (password === ADMIN_PASSWORD) {
+    isAuthenticated = true;
+    loginSection.style.display = "none";
+    adminContent.style.display = "block";
+    loginMessage.textContent = "";
+    await loadProducts();
+  } else {
+    loginMessage.textContent = "Incorrect password.";
   }
 });
 

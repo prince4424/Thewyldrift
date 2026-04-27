@@ -668,3 +668,54 @@ h1 {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.login-section {
+  align-items: center;
+  background: var(--paper);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.login-container {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-width: 400px;
+  padding: 40px;
+  text-align: center;
+  width: 100%;
+}
+
+.login-container h1 {
+  margin-bottom: 20px;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.login-message {
+  color: var(--brick);
+  margin-top: 10px;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 20px;
+  }
+
+  .login-container h1 {
+    font-size: 1.5rem;
+  }
+}

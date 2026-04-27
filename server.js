@@ -2,10 +2,26 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const os = require("os");
 
 const port = 8080;
 const root = __dirname;
 const dbPath = path.join(root, "db.json");
+
+// Load .env
+const envPath = path.join(root, ".env");
+let adminPasskey = "1234567899"; // default
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, "utf8");
+  const envLines = envContent.split("\n");
+  for (const line of envLines) {
+    const [key, value] = line.split("=");
+    if (key === "ADMIN_PASSKEY") {
+      adminPasskey = value.trim();
+      break;
+    }
+  }
+}
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -80,6 +96,11 @@ function validateProduct(product) {
   return "";
 }
 
+function checkAdminAuth(req) {
+  const authHeader = req.headers['x-admin-password'];
+  return authHeader === adminPasskey;
+}
+
 async function handleApi(req, res, pathname) {
   const db = readDb();
   const productId = pathname.match(/^\/api\/products\/([^/]+)$/)?.[1];
@@ -90,6 +111,10 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "POST" && pathname === "/api/products") {
+    if (!checkAdminAuth(req)) {
+      sendJson(res, 401, { error: "Unauthorized" });
+      return;
+    }
     const product = cleanProduct(await readBody(req));
     const error = validateProduct(product);
 
@@ -112,6 +137,10 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "PUT" && productId) {
+    if (!checkAdminAuth(req)) {
+      sendJson(res, 401, { error: "Unauthorized" });
+      return;
+    }
     const index = db.products.findIndex((product) => product.id === productId);
 
     if (index === -1) {
@@ -138,6 +167,10 @@ async function handleApi(req, res, pathname) {
   }
 
   if (req.method === "DELETE" && productId) {
+    if (!checkAdminAuth(req)) {
+      sendJson(res, 401, { error: "Unauthorized" });
+      return;
+    }
     const originalLength = db.products.length;
     db.products = db.products.filter((product) => product.id !== productId);
 
@@ -194,7 +227,19 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, () => {
+server.listen(port, '0.0.0.0', () => {
+  const interfaces = os.networkInterfaces();
+  let ipAddress = 'localhost';
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        ipAddress = iface.address;
+        break;
+      }
+    }
+    if (ipAddress !== 'localhost') break;
+  }
   console.log(`The Wyldrift is running at http://localhost:${port}`);
-  console.log(`Admin panel: http://localhost:${port}/admin.html`);
+  console.log(`Network access: http://${ipAddress}:${port}`);
+  console.log(`Admin panel: http://${ipAddress}:${port}/admin.html`);
 });

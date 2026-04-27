@@ -19,86 +19,102 @@
     </header>
 
     <main class="admin-shell">
-      <section class="admin-hero" aria-labelledby="admin-title">
-        <div>
-          <p class="eyebrow">Store manager</p>
-          <h1 id="admin-title">Products</h1>
-        </div>
-        <div class="admin-stats" aria-label="Store stats">
-          <div>
-            <span>Total</span>
-            <strong id="total-products">0</strong>
-          </div>
-          <div>
-            <span>Live</span>
-            <strong id="live-products">0</strong>
-          </div>
-          <div>
-            <span>Stock</span>
-            <strong id="total-stock">0</strong>
-          </div>
+      <section class="login-section" id="login-section">
+        <div class="login-container">
+          <h1>Admin Login</h1>
+          <form id="login-form">
+            <label>
+              Password
+              <input id="login-password" name="password" type="password" placeholder="Enter admin password" required />
+            </label>
+            <button type="submit" class="primary-button">Login</button>
+            <p class="login-message" id="login-message" role="status"></p>
+          </form>
         </div>
       </section>
 
-      <section class="admin-layout">
-        <form class="admin-form" id="product-form">
-          <h2 id="form-title">Add product</h2>
-          <input type="hidden" id="product-id" />
-
-          <label>
-            Product name
-            <input id="name" name="name" type="text" placeholder="Oversized black tee" required />
-          </label>
-
-          <label>
-            Category
-            <select id="category" name="category" required>
-              <option value="T-Shirts">T-Shirts</option>
-              <option value="Jeans">Jeans</option>
-              <option value="Shoes">Shoes</option>
-              <option value="Accessories">Accessories</option>
-            </select>
-          </label>
-
-          <label>
-            Price
-            <input id="price" name="price" type="text" placeholder="Rs. 999" required />
-          </label>
-
-          <label>
-            Stock
-            <input id="stock" name="stock" type="number" min="0" step="1" value="1" required />
-          </label>
-
-          <label>
-            Image URL
-            <input id="image" name="image" type="url" placeholder="https://..." required />
-          </label>
-
-          <label>
-            Product details
-            <textarea id="details" name="details" rows="4" placeholder="Fabric, fit, sizes, color options" required></textarea>
-          </label>
-
-          <label class="toggle-row">
-            <input id="active" name="active" type="checkbox" checked />
-            Show on storefront
-          </label>
-
-          <div class="form-actions">
-            <button type="submit" class="primary-button">Save product</button>
-            <button type="button" class="secondary-button" id="reset-form">Clear</button>
+      <section class="admin-content" id="admin-content" style="display: none;">
+        <section class="admin-hero" aria-labelledby="admin-title">
+          <div>
+            <p class="eyebrow">Store manager</p>
+            <h1 id="admin-title">Products</h1>
           </div>
-
-          <p class="form-message" id="form-message" role="status"></p>
-        </form>
-
-        <section class="admin-products" aria-labelledby="list-title">
-          <div class="list-toolbar">
-            <h2 id="list-title">Product listing</h2>
-            <input id="search" type="search" placeholder="Search products" aria-label="Search products" />
+          <div class="admin-stats" aria-label="Store stats">
+            <div>
+              <span>Total</span>
+              <strong id="total-products">0</strong>
+            </div>
+            <div>
+              <span>Live</span>
+              <strong id="live-products">0</strong>
+            </div>
+            <div>
+              <span>Stock</span>
+              <strong id="total-stock">0</strong>
+            </div>
           </div>
-          <div class="admin-product-list" id="admin-product-list"></div>
+        </section>
+
+        <section class="admin-layout">
+          <form class="admin-form" id="product-form">
+            <h2 id="form-title">Add product</h2>
+            <input type="hidden" id="product-id" />
+
+            <label>
+              Product name
+              <input id="name" name="name" type="text" placeholder="Oversized black tee" required />
+            </label>
+
+            <label>
+              Category
+              <select id="category" name="category" required>
+                <option value="T-Shirts">T-Shirts</option>
+                <option value="Jeans">Jeans</option>
+                <option value="Shoes">Shoes</option>
+                <option value="Accessories">Accessories</option>
+              </select>
+            </label>
+
+            <label>
+              Price
+              <input id="price" name="price" type="text" placeholder="Rs. 999" required />
+            </label>
+
+            <label>
+              Stock
+              <input id="stock" name="stock" type="number" min="0" step="1" value="1" required />
+            </label>
+
+            <label>
+              Image URL
+              <input id="image" name="image" type="url" placeholder="https://..." required />
+            </label>
+
+            <label>
+              Product details
+              <textarea id="details" name="details" rows="4" placeholder="Fabric, fit, sizes, color options" required></textarea>
+            </label>
+
+            <label class="toggle-row">
+              <input id="active" name="active" type="checkbox" checked />
+              Show on storefront
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button">Save product</button>
+              <button type="button" class="secondary-button" id="reset-form">Clear</button>
+            </div>
+
+            <p class="form-message" id="form-message" role="status"></p>
+          </form>
+
+          <section class="admin-products" aria-labelledby="list-title">
+            <div class="list-toolbar">
+              <h2 id="list-title">Product listing</h2>
+              <input id="search" type="search" placeholder="Search products" aria-label="Search products" />
+            </div>
+            <div class="admin-product-list" id="admin-product-list"></div>
+          </section>
         </section>
       </section>
     </main>
