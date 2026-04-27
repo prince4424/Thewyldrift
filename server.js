@@ -1,0 +1,49 @@
+require("dotenv").config();
+
+const express = require("express");
+const path = require("path");
+const helmet = require("helmet");
+const cors = require("cors");
+const mongoSanitize = require("express-mongo-sanitize");
+const morgan = require("morgan");
+const connectDb = require("./config/db");
+const adminRoutes = require("./routes/adminRoutes");
+const productRoutes = require("./routes/productRoutes");
+const errorHandler = require("./middleware/errorHandler");
+
+const app = express();
+const port = process.env.PORT || 8080;
+
+connectDb();
+
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(",") : true,
+    credentials: true,
+  })
+);
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(mongoSanitize());
+
+app.use(express.static(path.join(__dirname)));
+
+app.get("/api/health", (req, res) => {
+  res.json({ success: true, message: "The Wyldrift API is healthy" });
+});
+
+app.use("/api/admin", adminRoutes);
+app.use("/api/products", productRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Route not found" });
+});
+
+app.use(errorHandler);
+
+app.listen(port, () => {
+  console.log(`The Wyldrift API running at http://localhost:${port}`);
+  console.log(`Admin panel: http://localhost:${port}/admin.html`);
+});

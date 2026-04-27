@@ -1,0 +1,88 @@
+{
+  "products": [
+    {
+      "id": "tee-drift-graphic",
+      "category": "T-Shirts",
+      "name": "Drift Graphic T-Shirt",
+      "price": "Rs. 899",
+      "details": "Street graphic print, soft jersey fabric, everyday casual wear.",
+      "image": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=900&q=80",
+      "stock": 18,
+      "active": true,
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    {
+      "id": "tee-heavyweight-pocket",
+      "category": "T-Shirts",
+      "name": "Heavyweight Pocket Tee",
+      "price": "Rs. 799",
+      "details": "Relaxed fit with pocket detail, available in earthy solid colors.",
+      "image": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=900&q=80",
+      "stock": 16,
+      "active": true,
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    {
+      "id": "jeans-straight-denim",
+      "category": "Jeans",
+      "name": "Straight Fit Denim",
+      "price": "Rs. 1,499",
+      "details": "Mid-blue wash, straight leg, durable everyday denim.",
+      "image": "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=900&q=80",
+      "stock": 14,
+      "active": true,
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    {
+      "id": "jeans-black-slim",
+      "category": "Jeans",
+      "name": "Black Slim Jeans",
+      "price": "Rs. 1,599",
+      "details": "Clean black denim with stretch comfort, waist sizes 28 to 38.",
+      "image": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=900&q=80",
+      "stock": 12,
+      "active": true,
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    {
+      "id": "shoes-street-sneakers",
+      "category": "Shoes",
+      "name": "Everyday Street Sneakers",
+      "price": "Rs. 1,999",
+      "details": "Low-top sneakers for daily use, sizes 6 to 11.",
+      "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      "stock": 10,
+      "active": true,
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    {
+      "id": "shoes-white-trainers",
+      "category": "Shoes",
+      "name": "Classic White Trainers",
+      "price": "Rs. 1,799",
+      "details": "Minimal white trainer style, pairs with denim and tees.",
+      "image": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80",
+      "stock": 8,
+      "active": true,
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    {
+      "id": "accessory-urban-cap",
+      "category": "Accessories",
+      "name": "Urban Cap",
+      "price": "Rs. 499",
+      "details": "Adjustable cap with simple front branding.",
+      "image": "https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80",
+      "stock": 20,
+      "active": true,
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  ]
+}
