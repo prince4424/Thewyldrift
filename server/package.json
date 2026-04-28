@@ -1,0 +1,12 @@
+{
+  "name": "thewyldrift-server",
+  "version": "1.0.0",
+  "description": "Backend server for The Wyldrift e-commerce store",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["ecommerce", "server", "node"],
+  "author": "",
+  "license": "ISC"
+}
