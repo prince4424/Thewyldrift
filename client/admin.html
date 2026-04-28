@@ -76,6 +76,18 @@
             </label>
 
             <label>
+              Sizes
+              <select id="sizes" name="sizes" multiple size="5" required>
+                <option value="XS">XS</option>
+                <option value="S">S</option>
+                <option value="M" selected>M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+              </select>
+            </label>
+
+            <label>
               Price
               <input id="price" name="price" type="text" placeholder="Rs. 999" required />
             </label>
@@ -88,7 +100,16 @@
             <label>
               Image URL
               <input id="image" name="image" type="url" placeholder="https://..." required />
+              <span class="field-note">If Cloudinary is configured, this URL will be uploaded there automatically.</span>
             </label>
+
+            <label>
+              Upload image file
+              <input id="image-file" name="image-file" type="file" accept="image/*" />
+              <span class="field-note">Choose a local image to upload to Cloudinary and set the image URL automatically.</span>
+            </label>
+
+            <div class="admin-image-preview" id="image-preview" aria-label="Image preview"></div>
 
             <label>
               Product details

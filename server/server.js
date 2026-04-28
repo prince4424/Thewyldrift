@@ -5,22 +5,32 @@ const crypto = require("crypto");
 const os = require("os");
 
 const port = 8080;
-const root = __dirname;
-const dbPath = path.join(root, "db.json");
+const root = path.join(__dirname, "..", "client");
+const dbPath = path.join(__dirname, "db.json");
 
 // Load .env
-const envPath = path.join(root, ".env");
-let adminPasskey = "1234567899"; // default
+const envPath = path.join(__dirname, ".env");
+const envVars = {};
+
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, "utf8");
   const envLines = envContent.split("\n");
+
   for (const line of envLines) {
-    const [key, value] = line.split("=");
-    if (key === "ADMIN_PASSKEY") {
-      adminPasskey = value.trim();
-      break;
-    }
+    const [key, ...rest] = line.split("=");
+    if (!key) continue;
+    envVars[key.trim()] = rest.join("=").trim();
   }
+}
+
+const adminPasskey = envVars.ADMIN_PASSKEY || "1234567899";
+const cloudinaryUploadPreset = envVars.CLOUDINARY_UPLOAD_PRESET || "";
+const cloudinaryUrl = envVars.CLOUDINARY_URL || "";
+const cloudinaryConfig = cloudinaryUrl ? parseCloudinaryUrl(cloudinaryUrl) : null;
+
+function parseCloudinaryUrl(url) {
+  const match = url.match(/^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/);
+  return match ? { apiKey: match[1], apiSecret: match[2], cloudName: match[3] } : null;
 }
 
 const mimeTypes = {
@@ -76,6 +86,12 @@ function cleanProduct(input) {
     price: String(input.price || "").trim(),
     details: String(input.details || "").trim(),
     image: String(input.image || "").trim(),
+    sizes: Array.isArray(input.sizes)
+      ? input.sizes.map(String).map((value) => value.trim()).filter(Boolean)
+      : String(input.sizes || "")
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
     stock: Number.parseInt(input.stock, 10) || 0,
     active: input.active !== false,
   };
@@ -89,11 +105,49 @@ function validateProduct(product) {
     return `${missing.join(", ")} required`;
   }
 
+  if (!product.sizes.length) {
+    return "At least one size is required";
+  }
+
   if (product.stock < 0) {
     return "Stock cannot be negative";
   }
 
   return "";
+}
+
+function isCloudinaryUrl(image) {
+  return typeof image === "string" && /res\.cloudinary\.com/.test(image);
+}
+
+async function uploadImageToCloudinary(imageUrl) {
+  if (!cloudinaryConfig || !/^https?:\/\//i.test(imageUrl) || isCloudinaryUrl(imageUrl)) {
+    return imageUrl;
+  }
+
+  const form = new FormData();
+  form.append("file", imageUrl);
+  if (cloudinaryUploadPreset) {
+    form.append("upload_preset", cloudinaryUploadPreset);
+  }
+
+  const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`;
+  const auth = Buffer.from(`${cloudinaryConfig.apiKey}:${cloudinaryConfig.apiSecret}`).toString("base64");
+
+  const response = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${auth}`,
+    },
+    body: form,
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.error?.message || "Cloudinary upload failed");
+  }
+
+  return result.secure_url || imageUrl;
 }
 
 function checkAdminAuth(req) {
@@ -105,6 +159,68 @@ async function handleApi(req, res, pathname) {
   const db = readDb();
   const productId = pathname.match(/^\/api\/products\/([^/]+)$/)?.[1];
 
+  if (req.method === "POST" && pathname === "/api/admin/login") {
+    const body = await readBody(req);
+    if (String(body.password) === adminPasskey) {
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    sendJson(res, 401, { error: "Invalid password" });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/upload") {
+    if (!checkAdminAuth(req)) {
+      sendJson(res, 401, { error: "Unauthorized" });
+      return;
+    }
+
+    if (!cloudinaryConfig) {
+      sendJson(res, 500, { error: "Cloudinary is not configured in .env" });
+      return;
+    }
+
+    const body = await readBody(req);
+    const fileData = String(body.fileData || "").trim();
+    const fileName = String(body.fileName || "image").trim();
+
+    if (!fileData) {
+      sendJson(res, 400, { error: "No file data provided" });
+      return;
+    }
+
+    try {
+      const form = new FormData();
+      form.append("file", fileData);
+      if (cloudinaryUploadPreset) {
+        form.append("upload_preset", cloudinaryUploadPreset);
+      }
+      form.append("public_id", path.parse(fileName).name);
+
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`;
+      const auth = Buffer.from(`${cloudinaryConfig.apiKey}:${cloudinaryConfig.apiSecret}`).toString("base64");
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+        body: form,
+      });
+
+      const result = await uploadResponse.json();
+      if (!uploadResponse.ok) {
+        throw new Error(result.error?.message || "Cloudinary upload failed");
+      }
+
+      sendJson(res, 200, { url: result.secure_url || result.url });
+    } catch (error) {
+      sendJson(res, 500, { error: error.message || "Upload failed" });
+    }
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/api/products") {
     sendJson(res, 200, db.products);
     return;
@@ -115,12 +231,22 @@ async function handleApi(req, res, pathname) {
       sendJson(res, 401, { error: "Unauthorized" });
       return;
     }
+
     const product = cleanProduct(await readBody(req));
     const error = validateProduct(product);
 
     if (error) {
       sendJson(res, 400, { error });
       return;
+    }
+
+    if (cloudinaryConfig && product.image) {
+      try {
+        product.image = await uploadImageToCloudinary(product.image);
+      } catch (cloudError) {
+        sendJson(res, 500, { error: `Image upload failed: ${cloudError.message}` });
+        return;
+      }
     }
 
     const newProduct = {
@@ -154,6 +280,15 @@ async function handleApi(req, res, pathname) {
     if (error) {
       sendJson(res, 400, { error });
       return;
+    }
+
+    if (cloudinaryConfig && product.image) {
+      try {
+        product.image = await uploadImageToCloudinary(product.image);
+      } catch (cloudError) {
+        sendJson(res, 500, { error: `Image upload failed: ${cloudError.message}` });
+        return;
+      }
     }
 
     db.products[index] = {

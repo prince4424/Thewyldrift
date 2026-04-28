@@ -1,24 +1,77 @@
-<<<<<<< HEAD
+
 # The Wyldrift Storefront
 
-Run the local backend and storefront:
+A responsive e-commerce store with admin panel and Cloudinary image upload support.
 
-```powershell
+## Project Structure
+
+```
+THEWYLDRIFT/
+├── client/                 ← Deploy this folder on Vercel
+│   ├── index.html         (Storefront)
+│   ├── admin.html         (Admin panel)
+│   ├── script.js
+│   ├── admin.js
+│   └── styles.css
+├── server/                 ← Run this locally or on a backend server
+│   ├── server.js          (Node.js HTTP server)
+│   ├── db.json            (Product database)
+│   └── .env               (Environment variables)
+├── .gitignore
+└── README.md
+```
+
+## Local Development
+
+### Start the backend server
+
+```bash
+cd server
 node server.js
 ```
 
-Open:
-
+The server will display:
 - Storefront: `http://localhost:8080`
 - Admin panel: `http://localhost:8080/admin.html`
+- Network access: `http://<your-ip>:8080`
 
-The WhatsApp Business number is set in `script.js`:
+### Features
 
-```js
-const WHATSAPP_BUSINESS_NUMBER = "918219672237";
+- **Storefront**: Browse products by category, view details, contact via WhatsApp
+- **Admin Panel**: Add/edit/delete products with sizes and images
+- **Image Upload**: Upload images directly from admin panel to Cloudinary
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Authentication**: Password-protected admin panel
+
+## Configuration
+
+Create a `server/.env` file:
+
+```env
+ADMIN_PASSKEY=your-secure-password
+CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+CLOUDINARY_UPLOAD_PRESET=optional-preset
 ```
 
-Products are saved in `db.json`. Use the admin panel to add products, update names, prices, stock, images, details, and hide or show products on the storefront.
-=======
-# Thewyldrift
-94bb6c3f5a0896fdc21fbc4844bd009dd705d2dc
+## Deployment
+
+### Deploy Client on Vercel
+
+1. Push the entire project to GitHub
+2. On Vercel, create a new project and select your GitHub repo
+3. Set the **Root Directory** to `client`
+4. Deploy
+
+Your storefront will be live!
+
+### Deployment Notes
+
+- The client (frontend) is deployed on Vercel
+- The server (backend) can run on any Node.js host (Heroku, Railway, etc.)
+- Update the API endpoint in `client/admin.js` if your server is on a different domain
+
+## Database
+
+Products are stored in `server/db.json`. Each product has:
+- `id`, `name`, `category`, `price`, `stock`, `sizes`, `image`, `details`, `active`
+- `createdAt`, `updatedAt` timestamps

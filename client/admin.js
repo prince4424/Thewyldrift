@@ -8,25 +8,40 @@ const loginForm = document.querySelector("#login-form");
 const loginMessage = document.querySelector("#login-message");
 const loginSection = document.querySelector("#login-section");
 const adminContent = document.querySelector("#admin-content");
-const fields = ["product-id", "name", "category", "price", "stock", "image", "details", "active"].reduce(
+const fields = ["product-id", "name", "category", "sizes", "price", "stock", "image", "details", "active"].reduce(
   (items, id) => ({ ...items, [id]: document.getElementById(id) }),
   {}
 );
-
-const ADMIN_PASSWORD = '1234567899';
+const imageFileInput = document.querySelector("#image-file");
+const imagePreview = document.querySelector("#image-preview");
+let currentPreviewUrl = "";
 
 let products = [];
 let isAuthenticated = false;
+let adminPassword = "";
 
 function getAuthHeaders() {
-  return isAuthenticated ? { "X-Admin-Password": ADMIN_PASSWORD } : {};
+  return isAuthenticated ? { "X-Admin-Password": adminPassword } : {};
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    ...options,
-  });
+  const requestUrl = new URL(url, location.href).toString();
+  const headers = { ...getAuthHeaders() };
+
+  if (options.body) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  let response;
+  try {
+    response = await fetch(requestUrl, {
+      headers,
+      ...options,
+    });
+  } catch (error) {
+    throw new Error(error.message || "Network request failed");
+  }
+
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -40,6 +55,7 @@ function getFormData() {
   return {
     name: fields.name.value,
     category: fields.category.value,
+    sizes: Array.from(fields.sizes.selectedOptions).map((option) => option.value),
     price: fields.price.value,
     stock: fields.stock.value,
     image: fields.image.value,
@@ -48,15 +64,94 @@ function getFormData() {
   };
 }
 
+function showPreview(src) {
+  if (!imagePreview) return;
+  if (currentPreviewUrl) {
+    URL.revokeObjectURL(currentPreviewUrl);
+    currentPreviewUrl = "";
+  }
+
+  imagePreview.innerHTML = "";
+  if (!src) {
+    imagePreview.classList.remove("has-preview");
+    return;
+  }
+
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = "Selected product image preview";
+  imagePreview.appendChild(img);
+  imagePreview.classList.add("has-preview");
+}
+
+function clearPreview() {
+  showPreview("");
+}
+
+function hasFileToUpload() {
+  return imageFileInput && imageFileInput.files && imageFileInput.files.length > 0;
+}
+
+if (fields.image) {
+  fields.image.addEventListener("input", () => {
+    if (!hasFileToUpload()) {
+      showPreview(fields.image.value.trim());
+    }
+  });
+}
+
+if (imageFileInput) {
+  imageFileInput.addEventListener("change", () => {
+    if (hasFileToUpload()) {
+      const file = imageFileInput.files[0];
+      const previewUrl = URL.createObjectURL(file);
+      currentPreviewUrl = previewUrl;
+      showPreview(previewUrl);
+    } else {
+      showPreview(fields.image.value.trim());
+    }
+  });
+}
+
+async function uploadFile(file) {
+  const reader = new FileReader();
+
+  return new Promise((resolve, reject) => {
+    reader.onload = async () => {
+      try {
+        const fileData = reader.result;
+        const data = await requestJson("/api/upload", {
+          method: "POST",
+          body: JSON.stringify({ fileName: file.name, fileData }),
+        });
+
+        resolve(data.url);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = () => reject(new Error("Failed to read image file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function setForm(product) {
   fields["product-id"].value = product.id;
   fields.name.value = product.name;
   fields.category.value = product.category;
+  Array.from(fields.sizes.options).forEach((option) => {
+    option.selected = Array.isArray(product.sizes) && product.sizes.includes(option.value);
+  });
   fields.price.value = product.price;
   fields.stock.value = product.stock;
   fields.image.value = product.image;
   fields.details.value = product.details;
   fields.active.checked = product.active;
+  if (imageFileInput) {
+    imageFileInput.value = "";
+  }
+  showPreview(product.image);
   formTitle.textContent = "Update product";
   formMessage.textContent = "";
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -67,6 +162,10 @@ function clearForm() {
   fields["product-id"].value = "";
   fields.stock.value = 1;
   fields.active.checked = true;
+  if (imageFileInput) {
+    imageFileInput.value = "";
+  }
+  clearPreview();
   formTitle.textContent = "Add product";
   formMessage.textContent = "";
 }
@@ -88,6 +187,7 @@ function productRow(product) {
         <div>
           <h3>${product.name}</h3>
           <p>${product.category} | ${product.price}</p>
+          <p class="admin-product-sizes">Sizes: ${product.sizes?.join(", ") || "N/A"}</p>
         </div>
         <p>${product.details}</p>
         <div class="admin-badges">
@@ -126,6 +226,13 @@ form.addEventListener("submit", async (event) => {
   const payload = getFormData();
 
   try {
+    if (hasFileToUpload()) {
+      const file = imageFileInput.files[0];
+      const imageUrl = await uploadFile(file);
+      payload.image = imageUrl;
+      showPreview(imageUrl);
+    }
+
     if (id) {
       await requestJson(`/api/products/${id}`, {
         method: "PUT",
@@ -170,14 +277,26 @@ productList.addEventListener("click", async (event) => {
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = document.querySelector("#login-password").value;
-  if (password === ADMIN_PASSWORD) {
-    isAuthenticated = true;
-    loginSection.style.display = "none";
-    adminContent.style.display = "block";
-    loginMessage.textContent = "";
-    await loadProducts();
-  } else {
+
+  try {
+    const data = await requestJson("/api/admin/login", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    });
+
+    if (data.ok) {
+      isAuthenticated = true;
+      adminPassword = password;
+      loginSection.style.display = "none";
+      adminContent.style.display = "block";
+      loginMessage.textContent = "";
+      await loadProducts();
+      return;
+    }
+
     loginMessage.textContent = "Incorrect password.";
+  } catch (error) {
+    loginMessage.textContent = error.message;
   }
 });
 
