@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js"
   },
+  "dependencies": {
+    "form-data": "^4.0.0"
+  },
   "keywords": ["ecommerce", "server", "node"],
   "author": "",
   "license": "ISC"

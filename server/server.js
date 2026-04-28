@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
+const FormData = require("form-data");
 
 const port = 8080;
 const root = path.join(__dirname, "..", "client");
@@ -191,20 +192,26 @@ async function handleApi(req, res, pathname) {
     }
 
     try {
+      // Convert base64 to buffer
+      const base64Data = fileData.replace(/^data:image\/[a-z]+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+
       const form = new FormData();
-      form.append("file", fileData);
+      form.append("file", buffer, {
+        filename: fileName,
+        contentType: fileData.match(/^data:([^;]+)/)?.[1] || 'image/jpeg'
+      });
       if (cloudinaryUploadPreset) {
         form.append("upload_preset", cloudinaryUploadPreset);
       }
       form.append("public_id", path.parse(fileName).name);
 
       const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`;
-      const auth = Buffer.from(`${cloudinaryConfig.apiKey}:${cloudinaryConfig.apiSecret}`).toString("base64");
 
       const uploadResponse = await fetch(uploadUrl, {
         method: "POST",
         headers: {
-          Authorization: `Basic ${auth}`,
+          ...form.getHeaders(),
         },
         body: form,
       });
