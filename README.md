@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # The Wyldrift Storefront
 
 Run the local backend and storefront:
@@ -18,3 +19,6 @@ const WHATSAPP_BUSINESS_NUMBER = "918219672237";
 ```
 
 Products are saved in `db.json`. Use the admin panel to add products, update names, prices, stock, images, details, and hide or show products on the storefront.
+=======
+# Thewyldrift
+94bb6c3f5a0896fdc21fbc4844bd009dd705d2dc
