@@ -29,7 +29,7 @@ app.use(mongoSanitize());
 
 app.use(express.static(path.join(__dirname)));
 
-app.get("/api/health", (req, res) => {
+app.get("/", (req, res) => {
   res.json({ success: true, message: "The Wyldrift API is healthy" });
 });
 
