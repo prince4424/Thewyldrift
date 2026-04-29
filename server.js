@@ -42,6 +42,13 @@ app.use((req, res) => {
 
 app.use(errorHandler);
 
-connectDb();
+let connected = false;
 
-module.exports = app;
+module.exports = async (req, res) => {
+  if (!connected) {
+    await connectDb();
+    connected = true;
+  }
+
+  return app(req, res);
+};
