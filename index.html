@@ -11,63 +11,71 @@
     <link rel="preconnect" href="https://images.unsplash.com" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <header class="site-header">
-      <a class="brand" href="#top" aria-label="The Wyldrift home">
-        <span class="brand-mark">W</span>
-        <span>The Wyldrift</span>
+  <body class="store-body">
+    <header class="store-header">
+      <button class="icon-button menu-button" type="button" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <a class="store-logo" href="#top" aria-label="The Wyldrift home">
+        <span>The</span>
+        <strong>Wyldrift</strong>
       </a>
-      <nav class="nav-links" aria-label="Store categories">
-        <a href="#tshirts">T-Shirts</a>
-        <a href="#jeans">Jeans</a>
-        <a href="#shoes">Shoes</a>
-        <a href="#accessories">Accessories</a>
-        <a href="admin.html">Admin</a>
-      </nav>
+
+      <div class="store-actions">
+        <a class="round-action cart-action" href="#products" aria-label="Cart">
+          <span class="cart-count">0</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 8V7a5 5 0 0 1 10 0v1h2v13H5V8h2Zm2 0h6V7a3 3 0 0 0-6 0v1Z" />
+          </svg>
+        </a>
+        <a class="round-action" href="admin.html" aria-label="Admin login">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+          </svg>
+        </a>
+      </div>
     </header>
 
     <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-media" aria-hidden="true"></div>
-        <div class="hero-content">
-          <p class="eyebrow">New streetwear edits</p>
-          <h1 id="hero-title">The Wyldrift</h1>
-          <p class="hero-copy">
-            T-shirts, jeans, shoes, and everyday accessories curated for easy WhatsApp orders.
-          </p>
-          <a class="hero-action" href="#products">Shop collection</a>
-        </div>
+      <section class="search-section" aria-label="Search products">
+        <form class="store-search" id="store-search">
+          <input id="store-search-input" type="search" placeholder="Search for Store products" aria-label="Search products" />
+          <button type="submit" aria-label="Search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m21 19.6-5.2-5.2a7.5 7.5 0 1 0-1.4 1.4l5.2 5.2L21 19.6ZM5 10a5 5 0 1 1 5 5 5 5 0 0 1-5-5Z" />
+            </svg>
+          </button>
+        </form>
       </section>
 
       <section class="category-band" aria-labelledby="category-title">
         <div class="section-heading">
-          <p class="eyebrow">Shop by style</p>
-          <h2 id="category-title">Categories</h2>
+          <h2 id="category-title">Shop By Category</h2>
+          <span class="title-line"></span>
         </div>
         <div class="category-grid">
-          <a class="category-tile" href="#tshirts">
+          <a class="category-tile" href="#tshirts" style="--category-image: url('https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=700&q=80')">
             <span>T-Shirts</span>
-            <strong>Tees</strong>
           </a>
-          <a class="category-tile" href="#jeans">
+          <a class="category-tile" href="#jeans" style="--category-image: url('https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=700&q=80')">
             <span>Jeans</span>
-            <strong>Denim</strong>
           </a>
-          <a class="category-tile" href="#shoes">
+          <a class="category-tile" href="#shoes" style="--category-image: url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80')">
             <span>Shoes</span>
-            <strong>Kicks</strong>
           </a>
-          <a class="category-tile" href="#accessories">
+          <a class="category-tile" href="#accessories" style="--category-image: url('https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=700&q=80')">
             <span>Accessories</span>
-            <strong>Extras</strong>
           </a>
         </div>
       </section>
 
       <section id="products" class="products-section" aria-labelledby="products-title">
         <div class="section-heading">
-          <p class="eyebrow">Tap WhatsApp to order</p>
-          <h2 id="products-title">Featured Products</h2>
+          <h2 id="products-title">Latest Products</h2>
+          <span class="title-line"></span>
         </div>
 
         <div class="product-group" id="tshirts">

@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const Admin = require("../models/Admin");
 const connectDb = require("../config/db");
@@ -10,7 +10,7 @@ async function seedAdmin() {
     throw new Error("ADMIN_PASSKEY is required in .env");
   }
 
-  await connectDb();
+  await connectDb({ throwOnError: true });
 
   const passkeyHash = await bcrypt.hash(process.env.ADMIN_PASSKEY, 12);
 

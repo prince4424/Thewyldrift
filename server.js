@@ -10,11 +10,10 @@ const connectDb = require("./config/db");
 const adminRoutes = require("./routes/adminRoutes");
 const productRoutes = require("./routes/productRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const requireDb = require("./middleware/requireDb");
 
 const app = express();
 const port = process.env.PORT || 8080;
-
-connectDb();
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(
@@ -34,8 +33,8 @@ app.get("/api/health", (req, res) => {
   res.json({ success: true, message: "The Wyldrift API is healthy" });
 });
 
-app.use("/api/admin", adminRoutes);
-app.use("/api/products", productRoutes);
+app.use("/api/admin", requireDb, adminRoutes);
+app.use("/api/products", requireDb, productRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
@@ -43,7 +42,16 @@ app.use((req, res) => {
 
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`The Wyldrift API running at http://localhost:${port}`);
-  console.log(`Admin panel: http://localhost:${port}/admin.html`);
+async function startServer() {
+  await connectDb();
+
+  app.listen(port, () => {
+    console.log(`The Wyldrift API running at http://localhost:${port}`);
+    console.log(`Admin panel: http://localhost:${port}/admin.html`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error(`Server failed to start: ${error.message}`);
+  process.exit(1);
 });

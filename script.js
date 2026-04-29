@@ -1,5 +1,57 @@
 const WHATSAPP_BUSINESS_NUMBER = "918219672237";
 const categories = ["T-Shirts", "Jeans", "Shoes", "Accessories"];
+let allProducts = [];
+
+const fallbackProducts = [
+  {
+    id: "sample-shoe-1",
+    productName: "Nikee Dunk Street Pair",
+    description: "Premium sneaker style with box packaging.",
+    price: 25000,
+    discountPrice: 3500,
+    category: "Shoes",
+    stock: 8,
+    sku: "TW-SHOE-001",
+    active: true,
+    images: [{ url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80" }],
+  },
+  {
+    id: "sample-shoe-2",
+    productName: "White Air Street Sneaker",
+    description: "Clean white sneaker for daily outfits.",
+    price: 6200,
+    discountPrice: 3700,
+    category: "Shoes",
+    stock: 12,
+    sku: "TW-SHOE-002",
+    active: true,
+    images: [{ url: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80" }],
+  },
+  {
+    id: "sample-tee-1",
+    productName: "Oversized Wyld Tee",
+    description: "Soft cotton oversized tee.",
+    price: 1299,
+    discountPrice: 699,
+    category: "T-Shirts",
+    stock: 18,
+    sku: "TW-TEE-001",
+    active: true,
+    images: [{ url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80" }],
+  },
+  {
+    id: "sample-jeans-1",
+    productName: "Straight Fit Denim",
+    description: "Everyday blue denim jeans.",
+    price: 2499,
+    discountPrice: 1499,
+    category: "Jeans",
+    stock: 10,
+    sku: "TW-JEAN-001",
+    active: true,
+    images: [{ url: "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=900&q=80" }],
+  },
+];
 
 const whatsappIcon = `
   <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
@@ -22,7 +74,15 @@ function makeWhatsappUrl(product) {
 
 function formatPrice(product) {
   const amount = product.discountPrice || product.price;
-  return `Rs. ${Number(amount).toLocaleString("en-IN")}`;
+  return `₹ ${Number(amount).toLocaleString("en-IN")}.00`;
+}
+
+function formatOriginalPrice(product) {
+  if (!product.discountPrice || Number(product.discountPrice) >= Number(product.price)) {
+    return "";
+  }
+
+  return `₹${Number(product.price).toLocaleString("en-IN")}.00`;
 }
 
 function productCard(product) {
@@ -31,20 +91,22 @@ function productCard(product) {
 
   return `
     <article class="product-card">
-      <img src="${image}" alt="${product.productName}" loading="lazy" />
+      <div class="product-image-wrap">
+        <img src="${image}" alt="${product.productName}" loading="lazy" />
+        <a class="whatsapp-fab ${isSoldOut ? "disabled" : ""}" href="${isSoldOut ? "#" : makeWhatsappUrl(product)}" target="_blank" rel="noreferrer" aria-label="Order ${product.productName} on WhatsApp">
+          ${whatsappIcon}
+        </a>
+      </div>
       <div class="product-info">
-        <div class="product-title-row">
-          <h4>${product.productName}</h4>
-          <span class="price">${formatPrice(product)}</span>
-        </div>
+        <h4>${product.productName}</h4>
         <p class="product-meta">${product.description}</p>
+        <div class="price-row">
+          <span class="price">${formatPrice(product)}</span>
+          ${formatOriginalPrice(product) ? `<span class="compare-price">${formatOriginalPrice(product)}</span>` : ""}
+        </div>
         <span class="stock-pill ${isSoldOut ? "sold-out" : ""}">
           ${isSoldOut ? "Sold out" : `${product.stock} in stock`}
         </span>
-        <a class="whatsapp-link ${isSoldOut ? "disabled" : ""}" href="${isSoldOut ? "#" : makeWhatsappUrl(product)}" target="_blank" rel="noreferrer" aria-label="Order ${product.productName} on WhatsApp">
-          ${whatsappIcon}
-          <span>${isSoldOut ? "Currently unavailable" : "Order on WhatsApp"}</span>
-        </a>
       </div>
     </article>
   `;
@@ -62,13 +124,33 @@ async function getProducts() {
 }
 
 async function renderProducts() {
-  const products = await getProducts();
+  allProducts = await getProducts();
+  renderProductGroups(allProducts);
+}
 
+function renderProductGroups(products) {
   document.querySelectorAll(".product-grid").forEach((grid) => {
     const categoryProducts = products.filter((product) => product.category === grid.dataset.category);
     grid.innerHTML = categoryProducts.length
       ? categoryProducts.map(productCard).join("")
       : `<p class="empty-message">New ${grid.dataset.category.toLowerCase()} coming soon.</p>`;
+  });
+}
+
+function setupSearch() {
+  const form = document.querySelector("#store-search");
+  const input = document.querySelector("#store-search-input");
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const query = input.value.trim().toLowerCase();
+    const products = query
+      ? allProducts.filter((product) =>
+          [product.productName, product.category, product.description, product.sku].join(" ").toLowerCase().includes(query)
+        )
+      : allProducts;
+    renderProductGroups(products);
+    document.querySelector("#products").scrollIntoView({ behavior: "smooth" });
   });
 }
 
@@ -79,8 +161,8 @@ function renderGeneralWhatsappLink() {
 }
 
 renderProducts().catch(() => {
-  document.querySelectorAll(".product-grid").forEach((grid) => {
-    grid.innerHTML = `<p class="empty-message">Products could not load. Please try again.</p>`;
-  });
+  allProducts = fallbackProducts;
+  renderProductGroups(fallbackProducts);
 });
 renderGeneralWhatsappLink();
+setupSearch();
