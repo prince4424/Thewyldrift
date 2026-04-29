@@ -42,16 +42,6 @@ app.use((req, res) => {
 
 app.use(errorHandler);
 
-async function startServer() {
-  await connectDb();
+connectDb();
 
-  app.listen(port, () => {
-    console.log(`The Wyldrift API running at http://localhost:${port}`);
-    console.log(`Admin panel: http://localhost:${port}/admin.html`);
-  });
-}
-
-startServer().catch((error) => {
-  console.error(`Server failed to start: ${error.message}`);
-  process.exit(1);
-});
+module.exports = app;
