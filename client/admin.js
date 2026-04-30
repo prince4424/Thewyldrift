@@ -20,6 +20,10 @@ let products = [];
 let isAuthenticated = false;
 let adminPassword = "";
 
+// Use same-origin API by default. Can be overridden by setting `window.API_BASE`
+// in the HTML before this script loads (useful for separate frontend/backend).
+const API_BASE = (typeof window !== "undefined" && window.API_BASE ? String(window.API_BASE) : "").replace(/\/$/, "");
+
 function getAuthHeaders() {
   return isAuthenticated ? { "X-Admin-Password": adminPassword } : {};
 }
