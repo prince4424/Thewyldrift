@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const os = require("os");
 const FormData = require("form-data");
 
-const port = 8080;
+const port = Number(process.env.PORT) || 8080;
 const root = path.join(__dirname, "..", "client");
 const dbPath = path.join(__dirname, "db.json");
 
@@ -24,9 +24,9 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const adminPasskey = envVars.ADMIN_PASSKEY || "1234567899";
-const cloudinaryUploadPreset = envVars.CLOUDINARY_UPLOAD_PRESET || "";
-const cloudinaryUrl = envVars.CLOUDINARY_URL || "";
+const adminPasskey = process.env.ADMIN_PASSKEY || envVars.ADMIN_PASSKEY || "1234567899";
+const cloudinaryUploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET || envVars.CLOUDINARY_UPLOAD_PRESET || "";
+const cloudinaryUrl = process.env.CLOUDINARY_URL || envVars.CLOUDINARY_URL || "";
 const cloudinaryConfig = cloudinaryUrl ? parseCloudinaryUrl(cloudinaryUrl) : null;
 
 function parseCloudinaryUrl(url) {
