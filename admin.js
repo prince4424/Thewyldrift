@@ -12,6 +12,8 @@ const resetButton = document.querySelector("#reset-form");
 const productList = document.querySelector("#admin-product-list");
 const searchInput = document.querySelector("#search");
 const imagePreview = document.querySelector("#image-preview");
+const toastStack = document.querySelector("#toast-stack");
+const searchHint = document.querySelector(".search-hint");
 const fields = [
   "product-id",
   "existing-images",
@@ -31,9 +33,15 @@ const fields = [
 ].reduce((items, id) => ({ ...items, [id]: document.getElementById(id) }), {});
 
 let products = [];
+let busyCount = 0;
 
 function getToken() {
   return localStorage.getItem(tokenKey);
+}
+
+function setBusy(isBusy) {
+  busyCount = Math.max(0, busyCount + (isBusy ? 1 : -1));
+  document.documentElement.dataset.loading = busyCount > 0 ? "true" : "false";
 }
 
 function setAuthenticated(isAuthenticated) {
@@ -43,7 +51,25 @@ function setAuthenticated(isAuthenticated) {
   logoutButton.hidden = !isAuthenticated;
 }
 
+function toast(title, message = "", variant = "info", timeoutMs = 3200) {
+  if (!toastStack) return;
+
+  const el = document.createElement("div");
+  el.className = `toast toast-${variant}`;
+  el.innerHTML = `
+    <strong>${title}</strong>
+    ${message ? `<p>${message}</p>` : `<p class="sr-only">Notification</p>`}
+    <div class="toast-progress" aria-hidden="true"><span style="animation-duration:${timeoutMs}ms"></span></div>
+  `;
+
+  toastStack.appendChild(el);
+  window.setTimeout(() => {
+    el.remove();
+  }, timeoutMs + 80);
+}
+
 async function requestJson(url, options = {}) {
+  setBusy(true);
   const headers = new Headers(options.headers || {});
 
   if (getToken()) {
@@ -54,13 +80,26 @@ async function requestJson(url, options = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  const data = await response.json().catch(() => ({}));
+  let response;
+  let data = {};
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+    });
+    data = await response.json().catch(() => ({}));
+  } catch (error) {
+    throw new Error(error.message || "Network request failed");
+  } finally {
+    setBusy(false);
+  }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem(tokenKey);
+      setAuthenticated(false);
+      toast("Session expired", "Please log in again.", "danger");
+    }
     throw new Error(data.message || data.error || "Request failed");
   }
 
@@ -98,19 +137,37 @@ function formatPrice(product) {
   return `Rs. ${Number(amount).toLocaleString("en-IN")}`;
 }
 
-function renderImagePreview(images = []) {
-  imagePreview.innerHTML = images.length
-    ? images
+function renderImagePreview(savedImages = [], localFiles = []) {
+  const saved = (savedImages || []).map((image) => ({
+    src: image.url,
+    label: "Saved",
+  }));
+  const locals = (localFiles || []).map((file) => ({
+    src: URL.createObjectURL(file),
+    label: "New",
+    revoke: true,
+  }));
+
+  const all = [...locals, ...saved];
+  imagePreview.innerHTML = all.length
+    ? all
         .map(
-          (image) => `
+          (item) => `
             <div>
-              <img src="${image.url}" alt="Product image" />
-              <span>Saved</span>
+              <img src="${item.src}" alt="Product image" loading="lazy" />
+              <span>${item.label}</span>
             </div>
           `
         )
         .join("")
-    : `<p>No saved images yet.</p>`;
+    : `<p>No images selected.</p>`;
+
+  // Cleanup object URLs (after images have had a chance to load)
+  window.setTimeout(() => {
+    locals.forEach((item) => {
+      if (item.revoke) URL.revokeObjectURL(item.src);
+    });
+  }, 1200);
 }
 
 function setForm(product) {
@@ -131,7 +188,7 @@ function setForm(product) {
   fields.images.value = "";
   formTitle.textContent = "Update product";
   formMessage.textContent = "Add new images only if you want to append them.";
-  renderImagePreview(product.images || []);
+  renderImagePreview(product.images || [], []);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -197,9 +254,15 @@ function renderProducts() {
 }
 
 async function loadProducts() {
-  const data = await requestJson("/api/products?limit=100");
-  products = data.products || [];
-  renderProducts();
+  productList.innerHTML = `<p class="empty-message">Loading products…</p>`;
+  try {
+    const data = await requestJson("/api/products?limit=100");
+    products = data.products || [];
+    renderProducts();
+  } catch (error) {
+    productList.innerHTML = `<p class="empty-message">${error.message}</p>`;
+    throw error;
+  }
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -213,15 +276,19 @@ loginForm.addEventListener("submit", async (event) => {
     });
     localStorage.setItem(tokenKey, data.token);
     setAuthenticated(true);
+    toast("Welcome back", "You’re now signed in.", "success");
     await loadProducts();
   } catch (error) {
     loginMessage.textContent = error.message;
+    toast("Login failed", error.message, "danger");
   }
 });
 
 logoutButton.addEventListener("click", () => {
+  if (!confirm("Log out of admin?")) return;
   localStorage.removeItem(tokenKey);
   setAuthenticated(false);
+  toast("Logged out", "You’ve been signed out.", "info");
 });
 
 form.addEventListener("submit", async (event) => {
@@ -240,9 +307,11 @@ form.addEventListener("submit", async (event) => {
 
     clearForm();
     formMessage.textContent = id ? "Product updated." : "Product added.";
+    toast("Saved", id ? "Product updated." : "Product added.", "success");
     await loadProducts();
   } catch (error) {
     formMessage.textContent = error.message;
+    toast("Save failed", error.message, "danger");
   } finally {
     submitButton.disabled = false;
   }
@@ -250,6 +319,36 @@ form.addEventListener("submit", async (event) => {
 
 resetButton.addEventListener("click", clearForm);
 searchInput.addEventListener("input", renderProducts);
+
+// Show previews of newly selected images.
+fields.images?.addEventListener("change", () => {
+  let saved = [];
+  try {
+    saved = JSON.parse(fields["existing-images"].value || "[]");
+  } catch {
+    saved = [];
+  }
+  renderImagePreview(saved, Array.from(fields.images.files || []));
+});
+
+// Keyboard shortcut to focus search.
+window.addEventListener("keydown", (event) => {
+  const isTyping =
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLTextAreaElement ||
+    event.target instanceof HTMLSelectElement;
+  if (isTyping) return;
+
+  if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    event.preventDefault();
+    searchInput?.focus();
+  }
+});
+
+if (searchHint) {
+  const isMac = navigator.platform.toLowerCase().includes("mac");
+  searchHint.textContent = isMac ? "⌘ /" : "Ctrl /";
+}
 
 productList.addEventListener("click", async (event) => {
   const button = event.target.closest("button");
@@ -263,11 +362,16 @@ productList.addEventListener("click", async (event) => {
   }
 
   if (button.dataset.action === "delete" && product && confirm(`Delete ${product.productName}?`)) {
-    await requestJson(`/api/products/${product.id}`, {
-      method: "DELETE",
-      headers: { "Idempotency-Key": crypto.randomUUID() },
-    });
-    await loadProducts();
+    try {
+      await requestJson(`/api/products/${product.id}`, {
+        method: "DELETE",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+      });
+      toast("Deleted", `${product.productName} removed.`, "success");
+      await loadProducts();
+    } catch (error) {
+      toast("Delete failed", error.message, "danger");
+    }
   }
 });
 

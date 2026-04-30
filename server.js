@@ -15,41 +15,74 @@ const requireDb = require("./middleware/requireDb");
 
 const app = express();
 
+// Render (and most PaaS) terminate TLS at the proxy/load balancer.
+// Trust the proxy so we can safely read forwarded headers.
+app.set("trust proxy", 1);
+
+// ✅ Safe HTTPS redirect for Render (proxy-aware)
+app.use((req, res, next) => {
+  if (req.headers["x-forwarded-proto"] !== "https") {
+    return res.redirect(`https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
+// ✅ Security
 app.use(helmet({ contentSecurityPolicy: false }));
+
+// ✅ CORS (fixed)
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN
-      ? process.env.CLIENT_ORIGIN.split(",")
-      : true,
+    origin: ["https://thewyldrift.in"],
     credentials: true,
   })
 );
+
+// ✅ Middleware
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
-app.use(express.static(__dirname));
+// ✅ Static frontend
+app.use(express.static(path.join(__dirname)));
 
+// ✅ API health
+app.get("/api", (req, res) => {
+  res.json({ success: true, message: "API running" });
+});
+
+// ✅ Routes
+app.use("/api/admin", requireDb, adminRoutes);
+app.use("/api/products", requireDb, productRoutes);
+
+// ✅ Serve frontend
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-app.use("/api/admin", requireDb, adminRoutes);
-app.use("/api/products", requireDb, productRoutes);
-
+// ✅ 404
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
+// ✅ Error handler
 app.use(errorHandler);
 
-let connected = false;
+const PORT = process.env.PORT || 8080;
 
-module.exports = async (req, res) => {
-  if (!connected) {
-    await connectDb();
-    connected = true;
-  }
-  return app(req, res);
-};
+async function start() {
+  await connectDb({ throwOnError: true });
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+}
+
+if (require.main === module) {
+  start().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+} else {
+  module.exports = app;
+}

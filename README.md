@@ -17,7 +17,7 @@ MONGODB_URI=mongodb://127.0.0.1:27017/thewyldrift
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-ADMIN_PASSKEY=1234567899
+ADMIN_PASSKEY=99
 JWT_SECRET=your_long_random_secret
 ```
 

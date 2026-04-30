@@ -25,7 +25,10 @@ function getAuthHeaders() {
 }
 
 async function requestJson(url, options = {}) {
-  const requestUrl = new URL(url, location.href).toString();
+  const requestUrl = url.startsWith("http")
+    ? url
+    : `${API_BASE}${url}`;
+
   const headers = { ...getAuthHeaders() };
 
   if (options.body) {

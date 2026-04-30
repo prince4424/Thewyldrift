@@ -143,13 +143,17 @@
         <section class="admin-products" aria-labelledby="list-title">
           <div class="list-toolbar">
             <h2 id="list-title">Product listing</h2>
-            <input id="search" type="search" placeholder="Search products" aria-label="Search products" />
+            <div class="search-field">
+              <input id="search" type="search" placeholder="Search products" aria-label="Search products" />
+              <span class="search-hint" aria-hidden="true">Ctrl /</span>
+            </div>
           </div>
           <div class="admin-product-list" id="admin-product-list"></div>
         </section>
       </section>
     </main>
 
+    <div class="toast-stack" id="toast-stack" aria-live="polite" aria-relevant="additions"></div>
     <script src="admin.js"></script>
   </body>
 </html>
