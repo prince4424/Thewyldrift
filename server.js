@@ -19,14 +19,6 @@ const app = express();
 // Trust the proxy so we can safely read forwarded headers.
 app.set("trust proxy", 1);
 
-// ✅ Safe HTTPS redirect for Render (proxy-aware)
-app.use((req, res, next) => {
-  if (req.headers["x-forwarded-proto"] !== "https") {
-    return res.redirect(`https://${req.headers.host}${req.url}`);
-  }
-  next();
-});
-
 // ✅ Security
 app.use(helmet({ contentSecurityPolicy: false }));
 
