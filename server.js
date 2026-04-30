@@ -6,6 +6,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const mongoSanitize = require("express-mongo-sanitize");
 const morgan = require("morgan");
+
 const connectDb = require("./config/db");
 const adminRoutes = require("./routes/adminRoutes");
 const productRoutes = require("./routes/productRoutes");
@@ -13,12 +14,13 @@ const errorHandler = require("./middleware/errorHandler");
 const requireDb = require("./middleware/requireDb");
 
 const app = express();
-const port = process.env.PORT || 8080;
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(",") : true,
+    origin: process.env.CLIENT_ORIGIN
+      ? process.env.CLIENT_ORIGIN.split(",")
+      : true,
     credentials: true,
   })
 );
@@ -27,10 +29,10 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(mongoSanitize());
 
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "The Wyldrift API is healthy" });
+  res.sendFile(path.join(__dirname, "admin.html"));
 });
 
 app.use("/api/admin", requireDb, adminRoutes);
@@ -49,6 +51,5 @@ module.exports = async (req, res) => {
     await connectDb();
     connected = true;
   }
-
   return app(req, res);
 };
