@@ -156,6 +156,74 @@ textarea {
   width: 48px;
 }
 
+.store-body.menu-open {
+  overflow: hidden;
+}
+
+.mobile-nav-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  position: fixed;
+  z-index: 30;
+}
+
+.mobile-nav {
+  background: #fff;
+  border-left: 2px solid var(--line);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 4px;
+  height: 100vh;
+  overflow: auto;
+  padding: 18px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  transform: translateX(105%);
+  transition: transform 200ms ease;
+  width: min(360px, calc(100vw - 44px));
+  z-index: 40;
+}
+
+.store-body.menu-open .mobile-nav {
+  transform: translateX(0);
+}
+
+.mobile-nav-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mobile-nav-title {
+  font-size: 1.05rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.mobile-nav-close {
+  background: var(--yellow);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 1000;
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.mobile-nav a {
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  font-weight: 900;
+  padding: 14px 14px;
+}
+
+.mobile-nav a:hover {
+  border-color: #cfcfcf;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+}
+
 .store-logo {
   color: #000;
   display: inline-grid;
@@ -966,6 +1034,12 @@ textarea {
   .menu-button span {
     height: 5px;
     width: 42px;
+  }
+
+  /* Mobile menu is only relevant at small widths */
+  .mobile-nav[hidden],
+  .mobile-nav-overlay[hidden] {
+    display: none !important;
   }
 
   .round-action {

@@ -160,9 +160,52 @@ function renderGeneralWhatsappLink() {
   link.href = `https://wa.me/${WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+function setupMobileMenu() {
+  const button = document.querySelector("#menu-button");
+  const nav = document.querySelector("#mobile-nav");
+  const overlay = document.querySelector("#mobile-nav-overlay");
+  const closeButton = document.querySelector("#mobile-nav-close");
+
+  if (!button || !nav || !overlay || !closeButton) return;
+
+  function open() {
+    document.body.classList.add("menu-open");
+    button.setAttribute("aria-expanded", "true");
+    nav.hidden = false;
+    overlay.hidden = false;
+  }
+
+  function close() {
+    document.body.classList.remove("menu-open");
+    button.setAttribute("aria-expanded", "false");
+    nav.hidden = true;
+    overlay.hidden = true;
+  }
+
+  button.addEventListener("click", () => {
+    const isOpen = document.body.classList.contains("menu-open");
+    if (isOpen) close();
+    else open();
+  });
+
+  closeButton.addEventListener("click", close);
+  overlay.addEventListener("click", close);
+
+  nav.addEventListener("click", (event) => {
+    const link = event.target.closest("a");
+    if (!link) return;
+    close();
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+}
+
 renderProducts().catch(() => {
   allProducts = fallbackProducts;
   renderProductGroups(fallbackProducts);
 });
 renderGeneralWhatsappLink();
 setupSearch();
+setupMobileMenu();

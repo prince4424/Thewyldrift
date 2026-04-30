@@ -13,7 +13,7 @@
   </head>
   <body class="store-body">
     <header class="store-header">
-      <button class="icon-button menu-button" type="button" aria-label="Open menu">
+      <button class="icon-button menu-button" id="menu-button" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Open menu">
         <span></span>
         <span></span>
         <span></span>
@@ -38,6 +38,20 @@
         </a>
       </div>
     </header>
+
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay" hidden></div>
+    <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation" hidden>
+      <div class="mobile-nav-header">
+        <span class="mobile-nav-title">Menu</span>
+        <button class="mobile-nav-close" id="mobile-nav-close" type="button" aria-label="Close menu">Close</button>
+      </div>
+      <a href="#tshirts">T-Shirts</a>
+      <a href="#jeans">Jeans</a>
+      <a href="#shoes">Shoes</a>
+      <a href="#accessories">Accessories</a>
+      <a href="#products">All products</a>
+      <a href="admin.html">Admin</a>
+    </nav>
 
     <main id="top">
       <section class="search-section" aria-label="Search products">
