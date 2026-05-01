@@ -44,6 +44,23 @@ function setBusy(isBusy) {
   document.documentElement.dataset.loading = busyCount > 0 ? "true" : "false";
 }
 
+/** UUID for Idempotency-Key; works on http:// LAN (no secure context). */
+function generateIdempotencyKey() {
+  const c = typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
+  if (c && typeof c.randomUUID === "function") return c.randomUUID();
+  if (c && typeof c.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    c.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(
+      20
+    )}`;
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function setAuthenticated(isAuthenticated) {
   loginPanel.hidden = isAuthenticated;
   adminHero.hidden = !isAuthenticated;
@@ -301,7 +318,7 @@ form.addEventListener("submit", async (event) => {
   try {
     await requestJson(id ? `/api/products/${id}` : "/api/products", {
       method: id ? "PUT" : "POST",
-      headers: { "Idempotency-Key": crypto.randomUUID() },
+      headers: { "Idempotency-Key": generateIdempotencyKey() },
       body: createFormData(),
     });
 
@@ -365,7 +382,7 @@ productList.addEventListener("click", async (event) => {
     try {
       await requestJson(`/api/products/${product.id}`, {
         method: "DELETE",
-        headers: { "Idempotency-Key": crypto.randomUUID() },
+        headers: { "Idempotency-Key": generateIdempotencyKey() },
       });
       toast("Deleted", `${product.productName} removed.`, "success");
       await loadProducts();
