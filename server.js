@@ -1,5 +1,41 @@
 require("dotenv").config();
 
+// Temporary workaround for .env encoding issue
+// Set environment variables manually if dotenv fails to load them
+if (!process.env.MONGODB_URI) {
+  console.log('🔧 Setting environment variables manually (dotenv issue detected)');
+  process.env.PORT = '8080';
+  process.env.NODE_ENV = 'development';
+  process.env.CLIENT_ORIGIN = 'http://localhost:8080';
+  process.env.MONGODB_URI = 'mongodb+srv://princethakurDb4824:<hUnNfsSbXhBzBw8n>@admin.uxujztq.mongodb.net/?appName=Admin';
+  process.env.CLOUDINARY_CLOUD_NAME = 'dggw1xvgo';
+  process.env.CLOUDINARY_API_KEY = '572165238711735';
+  process.env.CLOUDINARY_API_SECRET = 'iTN0fPlHZEaOInBz3qgEtvy0cWg';
+  process.env.ADMIN_PASSKEY = '1234567899';
+  process.env.JWT_SECRET = '8fK!zQ7@vRnd3#nT5wYu1*AbCdE';
+  process.env.JWT_EXPIRES_IN = '1d';
+}
+
+// Required environment variables - must be set in .env file
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'CLOUDINARY_CLOUD_NAME', 
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
+  'ADMIN_PASSKEY',
+  'JWT_SECRET'
+];
+
+// Check if all required environment variables are set
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+  console.error('ERROR: Missing required environment variables:');
+  missingEnvVars.forEach(varName => console.error(`- ${varName}`));
+  console.error('Please set these in your .env file');
+  process.exit(1);
+}
+
+
 const express = require("express");
 const path = require("path");
 const helmet = require("helmet");
@@ -10,7 +46,6 @@ const morgan = require("morgan");
 const connectDb = require("./config/db");
 const adminRoutes = require("./routes/adminRoutes");
 const productRoutes = require("./routes/productRoutes");
-const settingsRoutes = require("./routes/settingsRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const requireDb = require("./middleware/requireDb");
 
@@ -54,7 +89,6 @@ app.get("/api", (req, res) => {
 // ✅ Routes
 app.use("/api/admin", requireDb, adminRoutes);
 app.use("/api/products", requireDb, productRoutes);
-app.use("/api/settings", requireDb, settingsRoutes);
 
 // ✅ Serve frontend (SPA)
 // Keep this BELOW API routes so `/api/*` is not captured.

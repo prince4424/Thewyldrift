@@ -2,6 +2,139 @@
 
 Secure Node.js + Express + MongoDB + Cloudinary admin product system.
 
+## 🤝 Team Collaboration
+
+This project is set up for team collaboration using Git and GitHub.
+
+### Repository Setup
+
+1. **Clone the repository:**
+```bash
+git clone https://github.com/YOUR_USERNAME/thewyldrift.git
+cd thewyldrift
+```
+
+2. **Install dependencies:**
+```bash
+npm install
+```
+
+3. **Set up your environment:**
+```bash
+cp .env.example .env
+# Edit .env with your credentials
+```
+
+### Branch Strategy
+
+- **`main`** - Production-ready code
+- **`develop`** - Integration branch for features
+- **`feature/*`** - Individual feature branches
+- **`bugfix/*`** - Bug fixes
+- **`hotfix/*`** - Critical fixes for production
+
+### Workflow
+
+1. **Create a feature branch:**
+```bash
+git checkout -b feature/your-feature-name
+```
+
+2. **Make your changes and commit:**
+```bash
+git add .
+git commit -m "feat: add your feature description"
+```
+
+3. **Push and create a pull request:**
+```bash
+git push origin feature/your-feature-name
+# Create PR on GitHub
+```
+
+### Commit Message Convention
+
+Use conventional commits:
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `style:` - Code formatting
+- `refactor:` - Code refactoring
+- `test:` - Test additions
+- `chore:` - Maintenance tasks
+
+### Code Review Process
+
+1. All changes must be submitted via Pull Request
+2. At least one team member must approve
+3. Automated tests must pass
+4. Merge to `develop` branch first
+5. Deploy from `develop` to `main` after testing
+
+### Environment Setup
+
+Each team member needs their own `.env` file:
+
+```env
+PORT=8080
+NODE_ENV=development
+CLIENT_ORIGIN=http://localhost:8080
+MONGODB_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/thewyldrift
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+ADMIN_PASSKEY=1234567899
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRES_IN=1d
+```
+
+### Development Commands
+
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+
+# Seed admin data
+npm run seed:admin
+```
+
+### Conflict Resolution
+
+1. **Pull latest changes before starting:**
+```bash
+git checkout main
+git pull origin main
+```
+
+2. **Rebase your branch:**
+```bash
+git checkout feature/your-feature
+git rebase main
+```
+
+3. **Resolve conflicts and continue:**
+```bash
+git add .
+git rebase --continue
+```
+
+### Deployment
+
+- **Development:** Automatically deployed from `develop` branch
+- **Production:** Manually deployed from `main` branch after review
+
+### Communication
+
+- **Discord/Slack:** Daily standups and progress updates
+- **GitHub Issues:** Bug reports and feature requests
+- **GitHub Discussions:** General questions and planning
+
 ## Setup
 
 1. Install dependencies:

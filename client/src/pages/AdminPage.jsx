@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ToastStack from "../components/ToastStack.jsx";
 import { useToasts } from "../hooks/useToasts.js";
 import { clearToken, getToken, requestJson, setToken } from "../lib/http.js";
@@ -47,6 +47,7 @@ function buildFormData(form, existingImagesJson, imageFiles) {
 }
 
 export default function AdminPage() {
+  const navigate = useNavigate();
   const { toasts, addToast, removeToast } = useToasts();
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getToken()));
   const [busy, setBusy] = useState(false);
@@ -132,7 +133,9 @@ export default function AdminPage() {
       });
       setToken(data.token);
       setIsAuthenticated(true);
-      addToast("Welcome back", "You’re now signed in.", "success");
+      addToast("Welcome back", "You're now signed in.", "success");
+      // Redirect to dashboard after successful login
+      navigate('/admin/dashboard');
     } catch (e) {
       addToast("Login failed", e.message, "danger");
     } finally {
@@ -170,6 +173,72 @@ export default function AdminPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  function removeLocalFile(index) {
+    setLocalFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function removeSavedImage(index) {
+    const newSavedImages = savedImages.filter((_, i) => i !== index);
+    setSavedImages(newSavedImages);
+    setExistingImagesJson(JSON.stringify(newSavedImages));
+  }
+
+  function addMultipleProducts() {
+    // Create multiple products with same base details but different SKUs
+    const baseProduct = { ...form };
+    const numProducts = parseInt(prompt("How many products do you want to create? (1-10)", "3")) || 1;
+    
+    if (numProducts < 1 || numProducts > 10) {
+      addToast("Invalid number", "Please enter a number between 1 and 10", "danger");
+      return;
+    }
+
+    const products = [];
+    for (let i = 0; i < numProducts; i++) {
+      const product = {
+        ...baseProduct,
+        productName: `${baseProduct.productName} - Variant ${i + 1}`,
+        sku: baseProduct.sku ? `${baseProduct.sku}-${i + 1}` : `SKU-${Date.now()}-${i + 1}`,
+        id: "", // New product
+      };
+      products.push(product);
+    }
+
+    // Process each product
+    Promise.all(
+      products.map(async (product) => {
+        try {
+          const payload = {
+            ...product,
+            sizes: product.sizes,
+            colors: product.colors,
+            tags: product.tags,
+          };
+          const data = buildFormData(payload, "[]", localFiles);
+          await createProduct(data);
+          return { success: true, product: product.productName };
+        } catch (err) {
+          return { success: false, product: product.productName, error: err.message };
+        }
+      })
+    ).then((results) => {
+      const successful = results.filter(r => r.success);
+      const failed = results.filter(r => !r.success);
+      
+      if (successful.length > 0) {
+        addToast("Success", `${successful.length} products created successfully`, "success");
+      }
+      
+      if (failed.length > 0) {
+        addToast("Partial failure", `${failed.length} products failed to create`, "danger");
+        failed.forEach(f => console.error(f.product, f.error));
+      }
+      
+      clearForm();
+      load();
+    });
+  }
+
   function editProduct(product) {
     setForm({
       id: product.id,
@@ -192,6 +261,7 @@ export default function AdminPage() {
     setLocalFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
     window.scrollTo({ top: 0, behavior: "smooth" });
+    addToast("Product loaded", "You can now edit this product", "info");
   }
 
   async function onSubmit(e) {
@@ -208,12 +278,26 @@ export default function AdminPage() {
       };
       // Server expects CSV strings; it parses them.
       const data = buildFormData(payload, existingImagesJson, localFiles);
-      if (form.id) await updateProduct(form.id, data);
-      else await createProduct(data);
+      
+      console.log("Submitting form:", {
+        id: form.id,
+        existingImages: existingImagesJson,
+        localFilesCount: localFiles.length,
+        savedImagesCount: savedImages.length
+      });
+      
+      if (form.id) {
+        await updateProduct(form.id, data);
+        addToast("Updated", "Product updated successfully.", "success");
+      } else {
+        await createProduct(data);
+        addToast("Created", "Product added successfully.", "success");
+      }
+      
       clearForm();
-      addToast("Saved", form.id ? "Product updated." : "Product added.", "success");
       await load();
     } catch (err) {
+      console.error("Submit error:", err);
       const rawErrors = Array.isArray(err?.validationErrors)
         ? err.validationErrors
         : Array.isArray(err?.payload?.errors)
@@ -412,13 +496,26 @@ export default function AdminPage() {
                 <div className="image-preview" aria-label="Image preview">
                   {localFiles.length || savedImages.length ? (
                     <>
-                      {localFiles.map((f) => (
-                        <PreviewTile key={f.name + f.size} file={f} label="New" />
+                      {localFiles.map((f, index) => (
+                        <PreviewTile 
+                          key={f.name + f.size} 
+                          file={f} 
+                          label="New" 
+                          onRemove={() => removeLocalFile(index)}
+                        />
                       ))}
-                      {savedImages.map((img) => (
-                        <div key={img.publicId || img.url}>
+                      {savedImages.map((img, index) => (
+                        <div key={img.publicId || img.url} className="saved-image-tile">
                           <img src={img.url} alt="Product image" loading="lazy" />
                           <span>Saved</span>
+                          <button 
+                            type="button" 
+                            className="remove-image-btn"
+                            onClick={() => removeSavedImage(index)}
+                            aria-label="Remove image"
+                          >
+                            ×
+                          </button>
                         </div>
                       ))}
                     </>
@@ -474,6 +571,16 @@ export default function AdminPage() {
                   <button type="button" className="secondary-button" onClick={clearForm} disabled={busy}>
                     Clear
                   </button>
+                  {!form.id && (
+                    <button 
+                      type="button" 
+                      className="secondary-button" 
+                      onClick={addMultipleProducts} 
+                      disabled={busy || !form.productName || !form.sku}
+                    >
+                      Add Multiple
+                    </button>
+                  )}
                 </div>
               </form>
 
@@ -648,7 +755,7 @@ function LoginCard({ disabled, onLogin }) {
   );
 }
 
-function PreviewTile({ file, label }) {
+function PreviewTile({ file, label, onRemove }) {
   const [src, setSrc] = useState("");
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -656,9 +763,19 @@ function PreviewTile({ file, label }) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
   return (
-    <div>
+    <div className="preview-tile">
       <img src={src} alt="Product image" loading="lazy" />
       <span>{label}</span>
+      {onRemove && (
+        <button 
+          type="button" 
+          className="remove-image-btn"
+          onClick={onRemove}
+          aria-label="Remove image"
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }
