@@ -2,9 +2,10 @@ export const TOKEN_KEY = "thewyldriftAdminToken";
 
 const DEFAULT_API_BASE = "http://localhost:8080";
 
-/** Base URL for `/api/...` (no trailing slash). Set `VITE_API_BASE_URL` when the API is not same-origin. */
+/** Base URL for `/api/...` (no trailing slash). Set `VITE_API_URL` in `.env` when the API is not same-origin. */
 export function getApiBase() {
-  const raw = import.meta.env.VITE_API_BASE_URL;
+  const raw =
+    import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
   if (raw !== undefined && String(raw).trim() !== "") {
     return String(raw).replace(/\/$/, "");
   }
