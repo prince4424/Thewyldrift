@@ -2,41 +2,85 @@
 
 Secure Node.js + Express + MongoDB + Cloudinary admin product system.
 
+## Repo layout
+
+- **`backend/`** — Express API (`server.js`), routes, models, config, seeds, and **`backend/.env`** (secrets live here only).
+- **`frontend/`** — Vite + React storefront and admin UI.
+- **`backend/legacy-server/`** — older experimental server (JSON file + Cloudinary); not used by `npm start`.
+
+There is **no** `package.json` at the repo root — install and run commands are always from **`backend/`** or **`frontend/`**.
+
 ## Setup
 
-1. Install dependencies:
+### 1. Install dependencies
 
-```powershell
-npm install
+From the repo root folder:
+
+```bash
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-2. Fill `.env`:
+### 2. Environment file
 
-```env
-MONGODB_URI=mongodb://127.0.0.1:27017/thewyldrift
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-ADMIN_PASSKEY=99
-JWT_SECRET=your_long_random_secret
+Copy the example and edit **`backend/.env`** (Mongo, Cloudinary, JWT, admin passkey):
+
+```bash
+cp backend/.env.example backend/.env
 ```
 
-3. Seed the admin passkey into MongoDB as a bcrypt hash:
+### 3. Seed admin (once)
 
-```powershell
+```bash
+cd backend
 npm run seed:admin
 ```
 
-4. Start the app:
+### 4. Run the **backend** (API only — no React UI on this port)
 
-```powershell
+```bash
+cd backend
 npm run dev
 ```
 
-Open:
+Uses **nodemon** and **`API_ONLY=1`**: **does not** serve `frontend/dist`. Opening **http://localhost:8080/** shows a small JSON welcome; all real traffic is under **`/api/*`**.
 
-- Storefront: `http://localhost:8080`
-- Admin panel: `http://localhost:8080/admin.html`
+Check the API:
+
+```bash
+curl -s http://localhost:8080/api
+```
+
+**Production-style (built React + API on the same port, no auto-restart):**
+
+```bash
+cd backend
+npm start
+```
+
+`npm start` serves the built UI from **`frontend/dist`** (run `cd ../frontend && npm run build` first if needed).
+
+### 5. Run **backend + frontend** together (dev)
+
+Install both packages first (step 1). Then:
+
+```bash
+cd backend
+npm run dev:all
+```
+
+That starts the API and Vite; open the **Vite** URL from the terminal (often **http://localhost:5173**). `/api` is proxied to port **8080**.
+
+### 6. Production-style (single port: UI + API)
+
+Build the React app, then start Node:
+
+```bash
+cd frontend && npm run build
+cd ../backend && npm start
+```
+
+Open **http://localhost:8080** (built UI + `/api` on the same origin).
 
 ## API
 
@@ -64,7 +108,7 @@ Product image uploads use `multipart/form-data` with the field name `images`.
 
 Git is initialized locally. To connect this folder to a GitHub repository:
 
-```powershell
+```bash
 git remote add origin https://github.com/YOUR_USERNAME/thewyldrift.git
 git branch -M main
 git add .
@@ -72,24 +116,17 @@ git commit -m "Initial secure product admin system"
 git push -u origin main
 ```
 
-If you install GitHub CLI later:
-
-```powershell
-gh auth login
-gh repo create thewyldrift --private --source=. --remote=origin --push
-```
-
 ## MongoDB
 
-This app expects MongoDB at the value in `MONGODB_URI`.
+This app expects MongoDB at **`MONGODB_URI`** in **`backend/.env`**.
 
 Options:
 
-- Local MongoDB Community Server: install it on Windows, start the MongoDB service, then use `mongodb://127.0.0.1:27017/thewyldrift`.
-- MongoDB Atlas: create a free cluster and replace `MONGODB_URI` with your Atlas connection string.
+- Local MongoDB Community Server: install it, start the service, then use `mongodb://127.0.0.1:27017/thewyldrift`.
+- MongoDB Atlas: create a free cluster and put your Atlas connection string in **`backend/.env`**.
 
 ## Notes
 
-- `.env` is ignored by Git.
-- The admin passkey is never hardcoded in route logic. It is read from `.env` only during `npm run seed:admin`, hashed with bcrypt, and saved in MongoDB.
-- Cloudinary `publicId` values are saved with image URLs so replaced/deleted product images can also be removed from Cloudinary.
+- **`backend/.env`** is ignored by Git.
+- The admin passkey is read from `.env` only during `npm run seed:admin`, hashed with bcrypt, and saved in MongoDB.
+- Cloudinary `publicId` values are saved with image URLs so replaced/deleted product images can be removed from Cloudinary.

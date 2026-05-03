@@ -1,0 +1,35 @@
+{
+  "name": "thewyldrift",
+  "version": "1.0.0",
+  "description": "Secure full-stack product management system for The Wyldrift.",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "dev:all": "concurrently -k -n api,web -c blue,magenta \"nodemon server.js\" \"npm run dev --prefix ../frontend\"",
+    "start": "node server.js",
+    "seed:admin": "node scripts/seedAdmin.js",
+    "seed:products": "node scripts/seedProducts.js",
+    "frontend:dev": "npm --prefix ../frontend run dev",
+    "frontend:build": "npm --prefix ../frontend run build"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.1.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0",
+    "nodemon": "^3.1.9"
+  }
+}
