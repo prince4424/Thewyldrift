@@ -341,8 +341,8 @@ export default function AdminPage() {
             ) : null}
 
             {adminPanel === "add" ? (
-              <div className="admin-mode admin-mode--add">
-                <nav className="admin-panel-nav" aria-label="Admin sections">
+              <div className="admin-mode admin-mode--add admin-mode-add-shell">
+                <nav className="admin-panel-nav admin-panel-nav--add" aria-label="Admin sections">
                   <button
                     type="button"
                     className="admin-panel-nav-btn"

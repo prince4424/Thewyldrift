@@ -1283,12 +1283,19 @@ button.admin-nav-pill {
   min-width: 0;
 }
 
-.admin-form--fullwidth {
+.admin-mode-add-shell {
   width: 100%;
-  max-width: min(920px, 100%);
+  max-width: 100%;
+  margin: 0;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
 }
 
-@media (min-width: 1101px) {
+.admin-form--fullwidth {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 1101px) and (min-height: 780px) {
   .admin-mode--add .admin-form--fullwidth {
     position: sticky;
     top: 88px;
@@ -1296,7 +1303,17 @@ button.admin-nav-pill {
     max-height: calc(100vh - 96px);
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px;
+    padding-right: 6px;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-height: 779px) {
+  .admin-mode--add .admin-form--fullwidth {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 }
 
@@ -1334,7 +1351,22 @@ button.admin-nav-pill {
 
 .admin-product-form {
   gap: 0;
-  padding: clamp(16px, 2.5vw, 22px);
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.admin-mode--add .admin-product-form {
+  border-radius: calc(var(--radius-xl) + 2px);
+  padding: clamp(20px, 3.5vw, 32px);
+}
+
+.admin-panel-nav--add {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  margin: -4px 0 12px;
+  padding-top: 4px;
+  padding-bottom: 12px;
+  background: linear-gradient(180deg, #faf8f4 70%, transparent);
 }
 
 .admin-form-head {
