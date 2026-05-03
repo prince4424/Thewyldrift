@@ -4,7 +4,7 @@ import StorefrontPage from "./pages/StorefrontPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage.jsx"));
-
+// code 
 function ProductDetailFallback() {
   return (
     <div className="store-body store-theme-light" style={{ padding: "clamp(24px, 5vw, 48px)", textAlign: "center" }}>
