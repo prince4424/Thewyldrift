@@ -90,6 +90,47 @@ function getProductDetailId(product) {
   return String(raw);
 }
 
+/** Matches admin product categories; used for stable section order on the storefront. */
+const CATEGORY_DISPLAY_ORDER = ["T-Shirts", "Jeans", "Shoes", "Shirts"];
+
+function getProductCategoryLabel(product) {
+  const c = product?.category;
+  if (c != null && String(c).trim()) return String(c).trim();
+  return "Other";
+}
+
+function orderedCategoriesFromProducts(productList) {
+  const present = new Set((productList || []).map(getProductCategoryLabel));
+  const out = [];
+  for (const c of CATEGORY_DISPLAY_ORDER) {
+    if (present.has(c)) out.push(c);
+  }
+  const extras = [...present]
+    .filter((c) => !CATEGORY_DISPLAY_ORDER.includes(c))
+    .filter((c) => c !== "Other")
+    .sort((a, b) => a.localeCompare(b));
+  const merged = [...out, ...extras];
+  if (present.has("Other")) merged.push("Other");
+  return merged;
+}
+
+function CategoryPickTile({ category, items, onPick }) {
+  const preview = pickImage(items[0], `${category}-category-tile`);
+  return (
+    <button type="button" className="store-category-tile" onClick={() => onPick(category)}>
+      <span className="store-category-tile-visual">
+        <img src={preview} alt="" loading="lazy" decoding="async" />
+      </span>
+      <span className="store-category-tile-body">
+        <span className="store-category-tile-name serif">{category}</span>
+        <span className="store-category-tile-meta">
+          {items.length} {items.length === 1 ? "item" : "items"}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 function useReveal() {
   const ref = useRef(null);
   useEffect(() => {
@@ -147,8 +188,12 @@ export default function StorefrontPage() {
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [query, setQuery] = useState("");
+  /** `null` = show category tiles only; a string = show products in that category. */
+  const [pickedCategory, setPickedCategory] = useState(null);
   const [site, setSite] = useState({
     homeLatestTitle: "All products",
+    homeCategoryKicker: "Shop",
+    homeCategoryTitle: "By category",
     cartBadge: 0,
   });
 
@@ -182,6 +227,18 @@ export default function StorefrontPage() {
       [p.productName, p.category, p.description, p.sku].join(" ").toLowerCase().includes(q)
     );
   }, [products, query]);
+
+  const categoryOrder = useMemo(() => orderedCategoriesFromProducts(filtered), [filtered]);
+
+  const itemsInPickedCategory = useMemo(() => {
+    if (!pickedCategory) return [];
+    return filtered.filter((p) => getProductCategoryLabel(p) === pickedCategory);
+  }, [filtered, pickedCategory]);
+
+  useEffect(() => {
+    if (pickedCategory == null) return;
+    if (!categoryOrder.includes(pickedCategory)) setPickedCategory(null);
+  }, [pickedCategory, categoryOrder]);
 
   return (
     <div className="store-body store-theme-light">
@@ -284,22 +341,42 @@ export default function StorefrontPage() {
         </section>
 
         <section id="products" className="products-section reveal" aria-labelledby="products-title" ref={latestRef}>
+          {pickedCategory ? (
+            <div className="store-category-toolbar">
+              <button type="button" className="store-category-back" onClick={() => setPickedCategory(null)}>
+                ← All categories
+              </button>
+            </div>
+          ) : null}
+
           <div className="section-title gold-left">
             <div className="section-title-left">
-              <span className="section-kicker">Shop</span>
+              <span className="section-kicker">
+                {pickedCategory ? "Category" : site.homeCategoryKicker || "Shop"}
+              </span>
               <h2 id="products-title" className="serif">
-                {site.homeLatestTitle || "All products"}
+                {pickedCategory || site.homeCategoryTitle || "Shop by category"}
               </h2>
             </div>
             {!productsLoading && filtered.length > 0 ? (
-              <span className="store-product-count">{filtered.length} items</span>
+              <span className="store-product-count">
+                {pickedCategory
+                  ? `${itemsInPickedCategory.length} ${itemsInPickedCategory.length === 1 ? "item" : "items"}`
+                  : `${categoryOrder.length} ${categoryOrder.length === 1 ? "category" : "categories"}`}
+              </span>
             ) : null}
           </div>
 
           {productsLoading ? (
             <div className="store-products-loading" aria-busy="true" aria-live="polite">
-              <div className="store-skeleton-grid store-skeleton-grid--catalog">
-                {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                className={
+                  pickedCategory
+                    ? "store-skeleton-grid store-skeleton-grid--catalog"
+                    : "store-skeleton-grid store-skeleton-grid--categories"
+                }
+              >
+                {Array.from({ length: pickedCategory ? 8 : 6 }).map((_, i) => (
                   <div key={i} className="store-skeleton-card" />
                 ))}
               </div>
@@ -320,12 +397,30 @@ export default function StorefrontPage() {
             <p className="store-no-results">No products match your search. Try a different keyword.</p>
           ) : null}
 
-          {!productsLoading && filtered.length > 0 ? (
-            <div className={`store-all-products-grid stagger in`}>
-              {filtered.map((p) => (
+          {!productsLoading && filtered.length > 0 && !pickedCategory ? (
+            <div className="store-category-pick-grid" role="list">
+              {categoryOrder.map((cat) => {
+                const items = filtered.filter((p) => getProductCategoryLabel(p) === cat);
+                if (!items.length) return null;
+                return (
+                  <div key={cat} className="store-category-tile-wrap" role="listitem">
+                    <CategoryPickTile category={cat} items={items} onPick={setPickedCategory} />
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {!productsLoading && pickedCategory && itemsInPickedCategory.length > 0 ? (
+            <div className="store-all-products-grid stagger in">
+              {itemsInPickedCategory.map((p) => (
                 <ProductShowcaseCard key={p.id || p._id} product={p} />
               ))}
             </div>
+          ) : null}
+
+          {!productsLoading && pickedCategory && itemsInPickedCategory.length === 0 ? (
+            <p className="store-no-results">Nothing in this category matches your search.</p>
           ) : null}
         </section>
       </main>
