@@ -1,204 +1,462 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import WyldriftLogo from "../components/WyldriftLogo.jsx";
+import HowItWorksSection from "../components/HowItWorksSection.jsx";
+import StartStylingButton from "../components/StartStylingButton.jsx";
+import StyleStickyBar from "../components/StyleStickyBar.jsx";
+import {
+  StorefrontFooter,
+  StorefrontHeader,
+  StorefrontMarquee,
+  useScrollReveal,
+} from "../components/StorefrontChrome.jsx";
 import { resolveApiUrl } from "../lib/http.js";
+import {
+  buildHeroSlidesFromProducts,
+  formatOriginalPrice,
+  formatPrice,
+  formatPriceAmount,
+  getProductCategoryLabel,
+  getProductDetailId,
+  getProductDetailUrl,
+  getProductTypeLabel,
+  isComboProduct,
+  makeProductWhatsappUrl,
+  orderedCategoriesFromProducts,
+  parseSizes,
+  pickImage,
+  pickSecondImage,
+  resolveHeroSlides,
+} from "../lib/storefront.js";
 
-const WHATSAPP_BUSINESS_NUMBER = "918219672237";
+function EditorialHero({ slides, loading }) {
+  const [active, setActive] = useState(0);
+  const [isMobileCarousel, setIsMobileCarousel] = useState(false);
+  const [pauseAuto, setPauseAuto] = useState(false);
+  const carouselRef = useRef(null);
+  const scrollRafRef = useRef(null);
+  const scrollBehaviorRef = useRef("auto");
+  const resumeAutoTimerRef = useRef(null);
+  const count = slides.length;
 
-/**
- * Landing hero collage (large panel + two stacked). Always these URLs — not tied to /api/products.
- * Swap `src` values for your own assets under `public/` (e.g. `/hero/main.jpg`) when ready.
- */
-const LANDING_HERO_COLLAGE_IMAGES = [
-  {
-    src: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=960&q=80",
-    alt: "Featured footwear",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1719204718581-5c95889c8ec9?auto=format&fit=crop&w=800&q=80",
-    alt: "WhatsApp chat on a phone",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
-    alt: "Boutique interior",
-  },
-];
+  const pauseAutoAdvance = useCallback((ms = 6000) => {
+    setPauseAuto(true);
+    if (resumeAutoTimerRef.current) window.clearTimeout(resumeAutoTimerRef.current);
+    resumeAutoTimerRef.current = window.setTimeout(() => setPauseAuto(false), ms);
+  }, []);
 
-function LandingHeroCollage({ images = LANDING_HERO_COLLAGE_IMAGES }) {
-  const triple = [0, 1, 2].map((i) => images[i] || LANDING_HERO_COLLAGE_IMAGES[i]);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    const update = () => setIsMobileCarousel(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (resumeAutoTimerRef.current) window.clearTimeout(resumeAutoTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (count <= 1 || pauseAuto) return undefined;
+    const id = window.setInterval(() => {
+      scrollBehaviorRef.current = "auto";
+      setActive((i) => (i + 1) % count);
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [count, pauseAuto]);
+
+  useEffect(() => {
+    if (active >= count) setActive(0);
+  }, [active, count]);
+
+  useEffect(() => {
+    if (!isMobileCarousel || count <= 1) return undefined;
+    const el = carouselRef.current;
+    if (!el) return undefined;
+
+    const syncScroll = () => {
+      const target = active * el.clientWidth;
+      if (Math.abs(el.scrollLeft - target) > 2) {
+        el.scrollTo({ left: target, behavior: scrollBehaviorRef.current });
+      }
+      scrollBehaviorRef.current = "auto";
+    };
+
+    syncScroll();
+    window.addEventListener("resize", syncScroll);
+    return () => window.removeEventListener("resize", syncScroll);
+  }, [active, isMobileCarousel, count]);
+
+  const handleCarouselScroll = useCallback(() => {
+    pauseAutoAdvance();
+    if (scrollRafRef.current) return;
+    scrollRafRef.current = window.requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      const el = carouselRef.current;
+      if (!el || count <= 1) return;
+      const idx = Math.round(el.scrollLeft / Math.max(el.clientWidth, 1));
+      const clamped = Math.max(0, Math.min(idx, count - 1));
+      setActive((prev) => (prev === clamped ? prev : clamped));
+    });
+  }, [count, pauseAutoAdvance]);
+
+  const goToSlide = useCallback(
+    (index) => {
+      scrollBehaviorRef.current = "smooth";
+      pauseAutoAdvance(8000);
+      setActive(index);
+    },
+    [pauseAutoAdvance]
+  );
+
   return (
-    <div className="store-hero-collage">
-      <figure className="store-hero-collage-main">
-        <img
-          src={triple[0].src}
-          alt={triple[0].alt || "Featured look"}
-          width={640}
-          height={800}
-          decoding="async"
-        />
-      </figure>
-      <div className="store-hero-collage-stack">
-        <figure className="store-hero-collage-cell store-hero-collage-cell--shift">
-          <img
-            src={triple[1].src}
-            alt={triple[1].alt || ""}
-            width={400}
-            height={480}
-            loading="lazy"
-            decoding="async"
-          />
-        </figure>
-        <figure className="store-hero-collage-cell">
-          <img
-            src={triple[2].src}
-            alt={triple[2].alt || ""}
-            width={400}
-            height={360}
-            loading="lazy"
-            decoding="async"
-          />
-        </figure>
+    <section className="editorial-hero editorial-hero--v2" aria-labelledby="hero-title">
+      <div className="editorial-hero-content">
+        <span className="editorial-hero-gold-line" aria-hidden="true" />
+        <p className="editorial-hero-kicker">Limited edits · Fresh drops weekly</p>
+        <h1 id="hero-title" className="editorial-hero-title">
+          <em>Wear what you mean.</em>
+        </h1>
+        <div className="editorial-hero-copy">
+          <p className="editorial-hero-sub-lead">Curated combos &amp; singles</p>
+          <p className="editorial-hero-sub-body">
+            Hand-picked coord sets and standalone pieces — styled with intention, not noise. Browse the
+            collection, choose your fit, and order in one WhatsApp chat.
+          </p>
+        </div>
+        <div className="editorial-hero-actions">
+          <StartStylingButton />
+          <a className="btn-editorial btn-editorial--ghost" href="#categories">
+            Browse Combos
+          </a>
+        </div>
       </div>
-      <div className="store-hero-collage-orbit" aria-hidden="true" />
-      <span className="store-hero-collage-badge">New season</span>
-    </div>
+
+      <div className="editorial-hero-media">
+        {loading ? <div className="editorial-hero-media-loading" aria-hidden="true" /> : null}
+        {!loading ? (
+          <div
+            ref={carouselRef}
+            className="editorial-hero-carousel"
+            onScroll={handleCarouselScroll}
+            onTouchStart={() => pauseAutoAdvance(8000)}
+            onPointerDown={() => pauseAutoAdvance(8000)}
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Featured looks"
+          >
+            {slides.map((slide, i) => {
+              const isActive = i === active;
+              const bg = (
+                <div
+                  className={`editorial-hero-slide-bg${isActive ? " editorial-hero-slide-bg--active" : ""}`}
+                  style={{ backgroundImage: `url(${slide.url})` }}
+                />
+              );
+
+              return (
+                <div
+                  key={slide.productId || slide.key || slide.url || i}
+                  className={`editorial-hero-slide${isActive ? " editorial-hero-slide--active" : ""}`}
+                  aria-hidden={isMobileCarousel ? false : !isActive}
+                >
+                  {slide.detailTo ? (
+                    <Link
+                      to={slide.detailTo}
+                      className="editorial-hero-slide-hit"
+                      aria-label={slide.productName ? `View ${slide.productName}` : "View product"}
+                      tabIndex={isMobileCarousel || isActive ? 0 : -1}
+                    >
+                      {bg}
+                    </Link>
+                  ) : (
+                    <div className="editorial-hero-slide-hit">{bg}</div>
+                  )}
+                  {slide.productName && slide.detailTo ? (
+                    <Link to={slide.detailTo} className="editorial-hero-caption">
+                      <span className="editorial-hero-caption-name">{slide.productName}</span>
+                      {slide.price ? <span className="editorial-hero-caption-price">{slide.price}</span> : null}
+                    </Link>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {count > 1 ? (
+          <div className="hero-dots" role="tablist" aria-label="Hero slides">
+            {slides.map((slide, i) => (
+              <button
+                key={slide.productId || slide.url || i}
+                type="button"
+                role="tab"
+                aria-selected={i === active}
+                aria-label={`Slide ${i + 1}`}
+                className={`hero-dot${i === active ? " hero-dot--active" : ""}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  goToSlide(i);
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
-function makeGeneralWhatsappUrl(message = "Hello The Wyldrift! I'd like to know more about your products.") {
-  return `https://wa.me/${WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
-}
-
-function formatPrice(product) {
-  const amount = product.discountPrice ?? product.price;
-  const n = Number(amount);
-  if (!Number.isFinite(n) || n < 0) return "—";
-  return `₹ ${n.toLocaleString("en-IN")}.00`;
-}
-
-function pickImage(product, seed) {
-  const image = product.images?.[0]?.url || product.image;
-  if (image) return image;
-  const safe = String(seed || product.sku || product.id || "wyldrift").replace(/[^a-z0-9]/gi, "-");
-  return `https://picsum.photos/seed/${encodeURIComponent(safe)}/1000/900`;
-}
-
-/** Stable string for `/product/:id` (API may send `id` string or `_id` ObjectId). */
-function getProductDetailId(product) {
-  const raw = product?.id ?? product?._id;
-  if (raw == null || raw === "") return "";
-  return String(raw);
-}
-
-/** Matches admin product categories; used for stable section order on the storefront. */
-const CATEGORY_DISPLAY_ORDER = ["T-Shirts", "Jeans", "Shoes", "Shirts"];
-
-function getProductCategoryLabel(product) {
-  const c = product?.category;
-  if (c != null && String(c).trim()) return String(c).trim();
-  return "Other";
-}
-
-function orderedCategoriesFromProducts(productList) {
-  const present = new Set((productList || []).map(getProductCategoryLabel));
-  const out = [];
-  for (const c of CATEGORY_DISPLAY_ORDER) {
-    if (present.has(c)) out.push(c);
-  }
-  const extras = [...present]
-    .filter((c) => !CATEGORY_DISPLAY_ORDER.includes(c))
-    .filter((c) => c !== "Other")
-    .sort((a, b) => a.localeCompare(b));
-  const merged = [...out, ...extras];
-  if (present.has("Other")) merged.push("Other");
-  return merged;
-}
-
-function CategoryPickTile({ category, items, onPick }) {
-  const preview = pickImage(items[0], `${category}-category-tile`);
+function TrustStripItem({ item, clone = false }) {
   return (
-    <button type="button" className="store-category-tile" onClick={() => onPick(category)}>
-      <span className="store-category-tile-visual">
-        <img src={preview} alt="" loading="lazy" decoding="async" />
-      </span>
-      <span className="store-category-tile-body">
-        <span className="store-category-tile-name serif">{category}</span>
-        <span className="store-category-tile-meta">
-          {items.length} {items.length === 1 ? "item" : "items"}
+    <article
+      className={`trust-strip-item${clone ? " trust-strip-item--clone" : ""}`}
+      aria-hidden={clone ? true : undefined}
+    >
+      <h3 className="trust-strip-title">
+        <span className="trust-strip-star" aria-hidden="true">
+          ✦
+        </span>{" "}
+        {item.title}
+      </h3>
+      <p className="trust-strip-body">{item.body}</p>
+    </article>
+  );
+}
+
+function TrustStrip() {
+  const items = [
+    { title: "Curated Weekly", body: "New drops every Friday" },
+    { title: "WhatsApp Orders", body: "Chat to order, get instant updates" },
+    { title: "Hassle-Free Returns", body: "7-day easy exchange policy" },
+  ];
+
+  return (
+    <section className="trust-strip reveal" aria-label="Store highlights">
+      <div className="trust-strip-viewport">
+        <div className="trust-strip-track">
+          {items.map((item) => (
+            <TrustStripItem key={item.title} item={item} />
+          ))}
+          {items.map((item) => (
+            <TrustStripItem key={`${item.title}-clone`} item={item} clone />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CategoryTile({ category, items, active, onPick }) {
+  const preview = pickImage(items[0], `${category}-category`);
+  const hasImage = Boolean(items[0]?.images?.[0]?.url || items[0]?.image);
+
+  return (
+    <button
+      type="button"
+      className={`category-portrait-tile${active ? " category-portrait-tile--active" : ""}`}
+      onClick={() => onPick(category)}
+      aria-pressed={active}
+    >
+      <span
+        className="category-portrait-tile-visual"
+        style={hasImage ? undefined : { background: "var(--color-tile-fallback, #E8E3DC)" }}
+      >
+        {hasImage ? <img src={preview} alt="" loading="lazy" decoding="async" /> : null}
+        <span className="category-portrait-tile-overlay" />
+        <span className="category-portrait-tile-name">
+          <em>{category}</em>
         </span>
       </span>
     </button>
   );
 }
 
-function useReveal() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) el.classList.add("in");
-        });
-      },
-      { threshold: 0.12 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  return ref;
+function ProductTypeBadge({ product }) {
+  const label = getProductTypeLabel(product);
+  const isCombo = isComboProduct(product);
+  return (
+    <span className={`product-type-badge${isCombo ? " product-type-badge--combo" : " product-type-badge--single"}`}>
+      {label}
+    </span>
+  );
 }
 
-function ProductShowcaseCard({ product }) {
-  const image = pickImage(product, `${product.category}-${product.sku}`);
+function ProductCard({ product }) {
+  const image = pickImage(product, product.sku);
+  const imageAlt = pickSecondImage(product, product.sku);
+  const hasSecond = imageAlt !== image;
   const detailId = getProductDetailId(product);
   const detailTo = detailId ? `/product/${encodeURIComponent(detailId)}` : "";
-
-  const hitContent = (
-    <>
-      <img src={image} alt={product.productName} loading="lazy" />
-
-      <div className="product-overlay">
-        <h3 className="product-title serif">{product.productName}</h3>
-        <span className="price-pill">{formatPrice(product)}</span>
-      </div>
-      {product.category ? <span className="product-category-chip">{product.category}</span> : null}
-    </>
-  );
+  const sizes = parseSizes(product);
+  const hasDiscount =
+    product.discountPrice != null && Number(product.discountPrice) < Number(product.price);
+  const waUrl = makeProductWhatsappUrl(product, { pageUrl: getProductDetailUrl(product) });
 
   return (
-    <article className="product-card catalog-card">
-      <div className="product-image-wrap">
+    <article className="editorial-product-card">
+      <div className="editorial-product-card-media">
+        <ProductTypeBadge product={product} />
         {detailTo ? (
-          <Link to={detailTo} className="product-card-hit" aria-label={`View details for ${product.productName}`}>
-            {hitContent}
+          <Link to={detailTo} className="editorial-product-card-link" aria-label={`View ${product.productName}`}>
+            <img className="editorial-product-img editorial-product-img--primary" src={image} alt={product.productName} loading="lazy" />
+            {hasSecond ? (
+              <img className="editorial-product-img editorial-product-img--hover" src={imageAlt} alt="" loading="lazy" aria-hidden="true" />
+            ) : null}
           </Link>
         ) : (
-          <div className="product-card-hit" role="img" aria-label={product.productName}>
-            {hitContent}
-          </div>
+          <img className="editorial-product-img editorial-product-img--primary" src={image} alt={product.productName} loading="lazy" />
         )}
+        <div className="editorial-product-card-hover-cta">
+          <StartStylingButton href={waUrl} className="btn-style-primary--card" />
+        </div>
+      </div>
+      <div className="editorial-product-card-body">
+        {product.category ? <span className="editorial-product-tag">{product.category}</span> : null}
+        <h3 className="editorial-product-name">
+          {detailTo ? <Link to={detailTo}>{product.productName}</Link> : product.productName}
+        </h3>
+        <p className="editorial-product-price">
+          {hasDiscount ? (
+            <>
+              <span className="editorial-product-price-was">{formatOriginalPrice(product)}</span>
+              <span className="editorial-product-price-sale">{formatPriceAmount(product.discountPrice)}</span>
+            </>
+          ) : (
+            <span>{formatPrice(product)}</span>
+          )}
+        </p>
+        {sizes.length ? (
+          <p className="editorial-product-sizes" aria-label="Available sizes">
+            {sizes.join(" · ")}
+          </p>
+        ) : null}
       </div>
     </article>
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg className="catalog-search__icon-svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        d="m21 19.6-5.2-5.2a7.5 7.5 0 1 0-1.4 1.4l5.2 5.2L21 19.6ZM5 10a5 5 0 1 1 5 5 5 5 0 0 1-5-5Z"
+      />
+    </svg>
+  );
+}
+
+function CatalogSearch({ query, onQueryChange, resultCount, onSubmit }) {
+  const inputId = "catalog-search-input";
+  const trimmed = query.trim();
+  const hasQuery = trimmed.length > 0;
+
+  return (
+    <section className="catalog-search-section reveal" aria-label="Search the collection">
+      <div className="catalog-search-section__head">
+        <label htmlFor={inputId} className="catalog-search-section__label">
+          Find your style
+        </label>
+        {!hasQuery ? (
+          <p className="catalog-search-section__hint">Name, category, colour, or SKU</p>
+        ) : (
+          <p className="catalog-search-section__meta" role="status" aria-live="polite">
+            {resultCount} {resultCount === 1 ? "piece" : "pieces"} match
+            <span className="catalog-search-section__query"> &ldquo;{trimmed}&rdquo;</span>
+          </p>
+        )}
+      </div>
+
+      <form
+        className="catalog-search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
+        <span className="catalog-search__icon" aria-hidden="true">
+          <SearchIcon />
+        </span>
+        <input
+          id={inputId}
+          className="catalog-search__input"
+          type="search"
+          name="q"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search combos, tees, denim…"
+          autoComplete="off"
+          enterKeyHint="search"
+        />
+        {hasQuery ? (
+          <button
+            type="button"
+            className="catalog-search__clear"
+            aria-label="Clear search"
+            onClick={() => {
+              onQueryChange("");
+              document.getElementById(inputId)?.focus();
+            }}
+          >
+            Clear
+          </button>
+        ) : null}
+        <button type="submit" className="catalog-search__submit" aria-label="Search and view results">
+          Go
+        </button>
+      </form>
+    </section>
+  );
+}
+
+async function fetchHeroProducts() {
+  const tryFetch = async (url) => {
+    const r = await fetch(resolveApiUrl(url));
+    if (!r.ok) return [];
+    const d = await r.json();
+    return d.products || [];
+  };
+
+  let list = await tryFetch("/api/products?limit=8&featured=true");
+  if (buildHeroSlidesFromProducts(list).length < 3) {
+    const more = await tryFetch("/api/products?limit=8");
+    const seen = new Set(list.map((p) => p.id || p._id));
+    for (const p of more) {
+      const id = p.id || p._id;
+      if (!seen.has(id)) {
+        list.push(p);
+        seen.add(id);
+      }
+    }
+  }
+  return list;
+}
+
 export default function StorefrontPage() {
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [heroSlides, setHeroSlides] = useState([]);
+  const [heroLoading, setHeroLoading] = useState(true);
   const [query, setQuery] = useState("");
-  /** `null` = show category tiles only; a string = show products in that category. */
   const [pickedCategory, setPickedCategory] = useState(null);
   const [site, setSite] = useState({
-    homeLatestTitle: "All products",
-    homeCategoryKicker: "Shop",
-    homeCategoryTitle: "By category",
-    cartBadge: 0,
+    homeCategoryTitle: "Shop by Style",
+    homeCategoryKicker: "Collections",
   });
 
-  const heroRef = useReveal();
-  const latestRef = useReveal();
+  useEffect(() => {
+    setHeroLoading(true);
+    fetchHeroProducts()
+      .then((list) => setHeroSlides(resolveHeroSlides(list)))
+      .catch(() => setHeroSlides(resolveHeroSlides([])))
+      .finally(() => setHeroLoading(false));
+  }, []);
 
   useEffect(() => {
     setProductsLoading(true);
@@ -230,10 +488,16 @@ export default function StorefrontPage() {
 
   const categoryOrder = useMemo(() => orderedCategoriesFromProducts(filtered), [filtered]);
 
+  useScrollReveal([productsLoading, pickedCategory, filtered.length, heroLoading]);
+
   const itemsInPickedCategory = useMemo(() => {
     if (!pickedCategory) return [];
     return filtered.filter((p) => getProductCategoryLabel(p) === pickedCategory);
   }, [filtered, pickedCategory]);
+
+  const gridProducts = pickedCategory ? itemsInPickedCategory : filtered;
+  const gridTitle = pickedCategory ? `Showing: ${pickedCategory}` : "All Styles";
+  const gridCount = gridProducts.length;
 
   useEffect(() => {
     if (pickedCategory == null) return;
@@ -241,212 +505,106 @@ export default function StorefrontPage() {
   }, [pickedCategory, categoryOrder]);
 
   return (
-    <div className="store-body store-theme-light">
-      <header className="store-header">
-        <a className="store-logo" href="#top" aria-label="The Wyldrift home">
-          <WyldriftLogo className="logo-svg" size={30} tone="light" />
-        </a>
-
-        <div className="store-actions store-actions--minimal">
-          <a
-            className="round-action wa-header-btn"
-            href={makeGeneralWhatsappUrl()}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Chat on WhatsApp"
-            title="WhatsApp"
-          >
-            <svg viewBox="0 0 32 32" aria-hidden="true" width="22" height="22">
-              <path
-                fill="currentColor"
-                d="M16.02 3.2A12.7 12.7 0 0 0 5.1 22.38L3.5 28.8l6.56-1.54a12.72 12.72 0 1 0 5.96-24.06Zm0 22.9c-2 0-3.86-.58-5.44-1.58l-.42-.26-3.9.92.94-3.8-.28-.44A10.1 10.1 0 1 1 16.02 26.1Zm5.86-7.56c-.32-.16-1.9-.94-2.2-1.04-.3-.12-.52-.16-.74.16-.22.32-.84 1.04-1.04 1.26-.18.22-.38.24-.7.08-.32-.16-1.36-.5-2.58-1.6-.96-.86-1.6-1.9-1.8-2.22-.18-.32-.02-.5.14-.66.14-.14.32-.38.48-.56.16-.2.22-.32.32-.54.12-.22.06-.4-.02-.56-.08-.16-.74-1.78-1.02-2.44-.26-.64-.54-.56-.74-.56h-.64c-.22 0-.56.08-.86.4-.3.32-1.14 1.12-1.14 2.72s1.16 3.14 1.32 3.36c.16.22 2.28 3.48 5.52 4.88.78.34 1.38.54 1.84.68.78.24 1.48.2 2.04.12.62-.1 1.9-.78 2.16-1.52.26-.74.26-1.38.18-1.52-.08-.14-.3-.22-.62-.38Z"
-              />
-            </svg>
-          </a>
-          <Link className="round-action" to="/admin" aria-label="Admin login" title="Admin">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
-            </svg>
-          </Link>
-        </div>
-        <span className="nav-gold-rule" aria-hidden="true" />
-      </header>
+    <div className="store-body store-theme-light store-editorial">
+      <StorefrontMarquee />
+      <StorefrontHeader homeLink="#top" />
 
       <main id="top">
-        <section className="store-hero reveal in" aria-labelledby="hero-title">
-          <div className="store-hero-inner">
-            <p className="store-hero-eyebrow">New season · WhatsApp concierge</p>
-            <h1 id="hero-title" className="store-hero-title serif">
-              Style that speaks. <span className="store-hero-accent">Guided on WhatsApp.</span>
-            </h1>
-            <p className="store-hero-lede">
-              Browse here, then open WhatsApp — our bot walks you through product info, price, how to buy, and delivery
-              in one thread.
-            </p>
-            <div className="store-hero-actions">
-              <a className="store-hero-btn-primary" href={makeGeneralWhatsappUrl()} target="_blank" rel="noreferrer">
-                <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M16.02 3.2A12.7 12.7 0 0 0 5.1 22.38L3.5 28.8l6.56-1.54a12.72 12.72 0 1 0 5.96-24.06Zm0 22.9c-2 0-3.86-.58-5.44-1.58l-.42-.26-3.9.92.94-3.8-.28-.44A10.1 10.1 0 1 1 16.02 26.1Zm5.86-7.56c-.32-.16-1.9-.94-2.2-1.04-.3-.12-.52-.16-.74.16-.22.32-.84 1.04-1.04 1.26-.18.22-.38.24-.7.08-.32-.16-1.36-.5-2.58-1.6-.96-.86-1.6-1.9-1.8-2.22-.18-.32-.02-.5.14-.66.14-.14.32-.38.48-.56.16-.2.22-.32.32-.54.12-.22.06-.4-.02-.56-.08-.16-.74-1.78-1.02-2.44-.26-.64-.54-.56-.74-.56h-.64c-.22 0-.56.08-.86.4-.3.32-1.14 1.12-1.14 2.72s1.16 3.14 1.32 3.36c.16.22 2.28 3.48 5.52 4.88.78.34 1.38.54 1.84.68.78.24 1.48.2 2.04.12.62-.1 1.9-.78 2.16-1.52.26-.74.26-1.38.18-1.52-.08-.14-.3-.22-.62-.38Z"
+        <EditorialHero slides={heroSlides} loading={heroLoading} />
+        <TrustStrip />
+
+        <CatalogSearch
+          query={query}
+          onQueryChange={setQuery}
+          resultCount={filtered.length}
+          onSubmit={() => document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" })}
+        />
+
+        <section id="categories" className="categories-section reveal" aria-labelledby="categories-title">
+          <div className="section-heading">
+            <span className="section-kicker">{site.homeCategoryKicker || "Collections"}</span>
+            <h2 id="categories-title">{site.homeCategoryTitle || "Shop by Style"}</h2>
+          </div>
+          {!productsLoading && categoryOrder.length > 0 ? (
+            <div className="category-portrait-scroll">
+              {categoryOrder.map((cat) => {
+                const items = filtered.filter((p) => getProductCategoryLabel(p) === cat);
+                if (!items.length) return null;
+                return (
+                  <CategoryTile
+                    key={cat}
+                    category={cat}
+                    items={items}
+                    active={pickedCategory === cat}
+                    onPick={(c) => {
+                      setPickedCategory(c);
+                      document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" });
+                    }}
                   />
-                </svg>
-                Start on WhatsApp
-              </a>
-              <a className="store-hero-btn-ghost" href="#products">
-                View catalogue
-              </a>
-            </div>
-            <ul className="store-hero-stats" aria-label="Store highlights">
-              <li>
-                <strong>WhatsApp</strong>
-                <span>Bot handles the chat</span>
-              </li>
-              <li>
-                <strong>Curated</strong>
-                <span>Limited runs</span>
-              </li>
-              <li>
-                <strong>India</strong>
-                <span>Trusted delivery</span>
-              </li>
-            </ul>
-          </div>
-          <div className="store-hero-visual" aria-hidden="true">
-            <LandingHeroCollage />
-          </div>
-        </section>
-
-        <section className="search-section reveal in" aria-label="Search products" ref={heroRef}>
-          <form
-            className="store-search"
-            onSubmit={(e) => {
-              e.preventDefault();
-              document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            <input
-              type="search"
-              placeholder="Search for Store products"
-              aria-label="Search products"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button type="submit" aria-label="Search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m21 19.6-5.2-5.2a7.5 7.5 0 1 0-1.4 1.4l5.2 5.2L21 19.6ZM5 10a5 5 0 1 1 5 5 5 5 0 0 1-5-5Z" />
-              </svg>
-            </button>
-          </form>
-        </section>
-
-        <section id="products" className="products-section reveal" aria-labelledby="products-title" ref={latestRef}>
-          {pickedCategory ? (
-            <div className="store-category-toolbar">
-              <button type="button" className="store-category-back" onClick={() => setPickedCategory(null)}>
-                ← All categories
-              </button>
+                );
+              })}
             </div>
           ) : null}
+        </section>
 
-          <div className="section-title gold-left">
-            <div className="section-title-left">
-              <span className="section-kicker">
-                {pickedCategory ? "Category" : site.homeCategoryKicker || "Shop"}
-              </span>
-              <h2 id="products-title" className="serif">
-                {pickedCategory || site.homeCategoryTitle || "Shop by category"}
-              </h2>
-            </div>
-            {!productsLoading && filtered.length > 0 ? (
-              <span className="store-product-count">
-                {pickedCategory
-                  ? `${itemsInPickedCategory.length} ${itemsInPickedCategory.length === 1 ? "item" : "items"}`
-                  : `${categoryOrder.length} ${categoryOrder.length === 1 ? "category" : "categories"}`}
+        <section id="products" className="products-section" aria-labelledby="products-title">
+          {pickedCategory ? (
+            <button type="button" className="store-category-back" onClick={() => setPickedCategory(null)}>
+              ← All styles
+            </button>
+          ) : null}
+
+          <div className="products-section-heading">
+            <h2 id="products-title" className="products-grid-title">
+              <em>{gridTitle}</em>
+            </h2>
+            {!productsLoading && gridCount > 0 ? (
+              <span className="products-grid-count">
+                {gridCount} {gridCount === 1 ? "piece" : "pieces"}
               </span>
             ) : null}
           </div>
 
           {productsLoading ? (
-            <div className="store-products-loading" aria-busy="true" aria-live="polite">
-              <div
-                className={
-                  pickedCategory
-                    ? "store-skeleton-grid store-skeleton-grid--catalog"
-                    : "store-skeleton-grid store-skeleton-grid--categories"
-                }
-              >
-                {Array.from({ length: pickedCategory ? 8 : 6 }).map((_, i) => (
-                  <div key={i} className="store-skeleton-card" />
-                ))}
-              </div>
+            <div className="editorial-products-grid editorial-products-grid--loading" aria-busy="true">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="store-skeleton-card" />
+              ))}
             </div>
           ) : null}
 
           {!productsLoading && products.length === 0 ? (
             <div className="store-empty-panel">
-              <p className="store-empty-title serif">Catalogue is updating</p>
-              <p className="store-empty-text">Tell us what you are looking for — we will share photos and availability on WhatsApp.</p>
-              <a className="store-hero-btn-primary" href={makeGeneralWhatsappUrl()} target="_blank" rel="noreferrer">
-                Message us
-              </a>
+              <p className="store-empty-title">Catalogue is updating</p>
+              <p className="store-empty-text">New pieces arrive weekly. Browse categories above or start styling on WhatsApp.</p>
+              <StartStylingButton />
             </div>
           ) : null}
 
           {!productsLoading && products.length > 0 && filtered.length === 0 ? (
-            <p className="store-no-results">No products match your search. Try a different keyword.</p>
-          ) : null}
-
-          {!productsLoading && filtered.length > 0 && !pickedCategory ? (
-            <div className="store-category-pick-grid" role="list">
-              {categoryOrder.map((cat) => {
-                const items = filtered.filter((p) => getProductCategoryLabel(p) === cat);
-                if (!items.length) return null;
-                return (
-                  <div key={cat} className="store-category-tile-wrap" role="listitem">
-                    <CategoryPickTile category={cat} items={items} onPick={setPickedCategory} />
-                  </div>
-                );
-              })}
+            <div className="store-empty-panel store-empty-panel--search">
+              <p className="store-empty-title">
+                No styles found for &ldquo;{query.trim()}&rdquo;
+              </p>
+              <p className="store-empty-text">Try browsing our combos or chat with us on WhatsApp</p>
+              <StartStylingButton />
             </div>
           ) : null}
 
-          {!productsLoading && pickedCategory && itemsInPickedCategory.length > 0 ? (
-            <div className="store-all-products-grid stagger in">
-              {itemsInPickedCategory.map((p) => (
-                <ProductShowcaseCard key={p.id || p._id} product={p} />
+          {!productsLoading && gridProducts.length > 0 ? (
+            <div className="editorial-products-grid">
+              {gridProducts.map((p) => (
+                <ProductCard key={p.id || p._id} product={p} />
               ))}
             </div>
           ) : null}
-
-          {!productsLoading && pickedCategory && itemsInPickedCategory.length === 0 ? (
-            <p className="store-no-results">Nothing in this category matches your search.</p>
-          ) : null}
         </section>
+
+        <HowItWorksSection />
       </main>
 
-      <a
-        className="whatsapp-global-fab"
-        href={makeGeneralWhatsappUrl()}
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Open WhatsApp to chat with The Wyldrift"
-      >
-        <svg viewBox="0 0 32 32" aria-hidden="true" width="30" height="30">
-          <path
-            fill="currentColor"
-            d="M16.02 3.2A12.7 12.7 0 0 0 5.1 22.38L3.5 28.8l6.56-1.54a12.72 12.72 0 1 0 5.96-24.06Zm0 22.9c-2 0-3.86-.58-5.44-1.58l-.42-.26-3.9.92.94-3.8-.28-.44A10.1 10.1 0 1 1 16.02 26.1Zm5.86-7.56c-.32-.16-1.9-.94-2.2-1.04-.3-.12-.52-.16-.74.16-.22.32-.84 1.04-1.04 1.26-.18.22-.38.24-.7.08-.32-.16-1.36-.5-2.58-1.6-.96-.86-1.6-1.9-1.8-2.22-.18-.32-.02-.5.14-.66.14-.14.32-.38.48-.56.16-.2.22-.32.32-.54.12-.22.06-.4-.02-.56-.08-.16-.74-1.78-1.02-2.44-.26-.64-.54-.56-.74-.56h-.64c-.22 0-.56.08-.86.4-.3.32-1.14 1.12-1.14 2.72s1.16 3.14 1.32 3.36c.16.22 2.28 3.48 5.52 4.88.78.34 1.38.54 1.84.68.78.24 1.48.2 2.04.12.62-.1 1.9-.78 2.16-1.52.26-.74.26-1.38.18-1.52-.08-.14-.3-.22-.62-.38Z"
-          />
-        </svg>
-      </a>
-
-      <footer className="site-footer site-footer--branded">
-        <a className="site-footer-logo" href="#top" aria-label="The Wyldrift home">
-          <WyldriftLogo className="logo-svg logo-svg--footer" size={34} tone="light" />
-        </a>
-        <p className="site-footer-copy">© 2026 The Wyldrift. All rights reserved.</p>
-      </footer>
+      <StyleStickyBar />
+      <StorefrontFooter />
     </div>
   );
 }
-

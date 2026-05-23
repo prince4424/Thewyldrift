@@ -3,8 +3,17 @@ import React, { useId } from "react";
 export default function WyldriftLogo({ className = "", size = 34, tone = "dark" }) {
   const uid = useId();
   const gradId = `wyldrift-gold-${uid.replace(/[^a-zA-Z0-9]/g, "")}`;
-  const small = tone === "light" ? "rgba(20,20,20,0.55)" : "rgba(245,240,232,0.78)";
-  const main = tone === "light" ? "#141414" : "#F5F0E8";
+
+  let small = "rgba(245,240,232,0.78)";
+  let main = "#F5F0E8";
+
+  if (tone === "light") {
+    small = "rgba(20,20,20,0.55)";
+    main = "#141414";
+  } else if (tone === "gold") {
+    small = "rgba(245, 242, 237, 0.8)";
+    main = "#C4A055";
+  }
 
   return (
     <svg

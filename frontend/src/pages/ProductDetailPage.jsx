@@ -1,36 +1,49 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import WyldriftLogo from "../components/WyldriftLogo.jsx";
+import ProductGallery from "../components/ProductGallery.jsx";
+import StartStylingButton from "../components/StartStylingButton.jsx";
+import StyleStickyBar from "../components/StyleStickyBar.jsx";
+import {
+  StorefrontFooter,
+  StorefrontHeader,
+  StorefrontMarquee,
+  useScrollReveal,
+} from "../components/StorefrontChrome.jsx";
 import { getProductById } from "../lib/products.js";
+import {
+  formatOriginalPrice,
+  formatPrice,
+  formatPriceAmount,
+  getComboSavings,
+  isComboProduct,
+  makeProductWhatsappUrl,
+  parseComboIncludes,
+  parseSizes,
+} from "../lib/storefront.js";
 
-const WHATSAPP_BUSINESS_NUMBER = "918219672237";
+function AccordionItem({ id, title, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const panelId = `accordion-${id}`;
 
-function makeGeneralWhatsappUrl(message = "Hello The Wyldrift! I'd like to know more about your products.") {
-  return `https://wa.me/${WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
-}
-
-function makeWhatsappUrl(product) {
-  const message = [
-    "Hello The Wyldrift, I want to order this product:",
-    `Product: ${product.productName}`,
-    `Category: ${product.category}`,
-    `Price: ${formatPrice(product)}`,
-    `SKU: ${product.sku}`,
-    `Details: ${product.description}`,
-  ].join("\n");
-  return `https://wa.me/${WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
-}
-
-function formatPrice(product) {
-  const amount = product.discountPrice ?? product.price;
-  const n = Number(amount);
-  if (!Number.isFinite(n) || n < 0) return "—";
-  return `₹ ${n.toLocaleString("en-IN")}.00`;
-}
-
-function listText(arr) {
-  if (!Array.isArray(arr) || !arr.length) return "—";
-  return arr.join(", ");
+  return (
+    <div className={`detail-accordion${open ? " detail-accordion--open" : ""}`}>
+      <button
+        type="button"
+        className="detail-accordion-trigger"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span>{title}</span>
+        <span className="detail-accordion-icon" aria-hidden="true">
+          {open ? "−" : "+"}
+        </span>
+      </button>
+      <div id={panelId} className="detail-accordion-panel" aria-hidden={!open}>
+        <div className="detail-accordion-content">{children}</div>
+      </div>
+    </div>
+  );
 }
 
 export default function ProductDetailPage() {
@@ -38,12 +51,15 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+
+  useScrollReveal([loading, product?.id]);
 
   useEffect(() => {
     if (!id) {
       setLoading(false);
       setError("Missing product link.");
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);
@@ -52,7 +68,10 @@ export default function ProductDetailPage() {
       .then((p) => {
         if (cancelled) return;
         if (!p) setError("Product not found.");
-        else setProduct(p);
+        else {
+          setProduct(p);
+          setSelectedSize("");
+        }
       })
       .catch((e) => {
         if (cancelled) return;
@@ -68,48 +87,49 @@ export default function ProductDetailPage() {
   }, [id]);
 
   const isSoldOut = product && Number(product.stock) <= 0;
-  const images = product?.images?.length ? product.images : product?.image ? [{ url: product.image }] : [];
+  const isCombo = product ? isComboProduct(product) : false;
+  const sizes = product ? parseSizes(product) : [];
+  const hasDiscount =
+    product?.discountPrice != null && Number(product.discountPrice) < Number(product.price);
+  const comboSavings = product ? getComboSavings(product) : null;
+  const comboIncludes = product ? parseComboIncludes(product.description) : [];
+
+  const waUrl =
+    product && !isSoldOut
+      ? makeProductWhatsappUrl(product, {
+          size: selectedSize || undefined,
+          pageUrl: typeof window !== "undefined" ? window.location.href : undefined,
+        })
+      : "#";
+
+  const materialCare =
+    product?.description?.match(/material[^:]*:\s*([^\n]+)/i)?.[1] ||
+    (product?.colors?.length ? `Colours: ${product.colors.join(", ")}` : null);
+
+  const breadcrumbType = isCombo ? "Combos" : "Singles";
 
   return (
-    <div className="store-body store-theme-light">
-      <header className="store-header">
-        <Link className="store-logo" to="/" aria-label="The Wyldrift home">
-          <WyldriftLogo className="logo-svg" size={30} tone="light" />
-        </Link>
-        <div className="store-actions store-actions--minimal">
-          <a
-            className="round-action wa-header-btn"
-            href={makeGeneralWhatsappUrl()}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Chat on WhatsApp"
-            title="WhatsApp"
-          >
-            <svg viewBox="0 0 32 32" aria-hidden="true" width="22" height="22">
-              <path
-                fill="currentColor"
-                d="M16.02 3.2A12.7 12.7 0 0 0 5.1 22.38L3.5 28.8l6.56-1.54a12.72 12.72 0 1 0 5.96-24.06Zm0 22.9c-2 0-3.86-.58-5.44-1.58l-.42-.26-3.9.92.94-3.8-.28-.44A10.1 10.1 0 1 1 16.02 26.1Zm5.86-7.56c-.32-.16-1.9-.94-2.2-1.04-.3-.12-.52-.16-.74.16-.22.32-.84 1.04-1.04 1.26-.18.22-.38.24-.7.08-.32-.16-1.36-.5-2.58-1.6-.96-.86-1.6-1.9-1.8-2.22-.18-.32-.02-.5.14-.66.14-.14.32-.38.48-.56.16-.2.22-.32.32-.54.12-.22.06-.4-.02-.56-.08-.16-.74-1.78-1.02-2.44-.26-.64-.54-.56-.74-.56h-.64c-.22 0-.56.08-.86.4-.3.32-1.14 1.12-1.14 2.72s1.16 3.14 1.32 3.36c.16.22 2.28 3.48 5.52 4.88.78.34 1.38.54 1.84.68.78.24 1.48.2 2.04.12.62-.1 1.9-.78 2.16-1.52.26-.74.26-1.38.18-1.52-.08-.14-.3-.22-.62-.38Z"
-              />
-            </svg>
-          </a>
-          <Link className="round-action" to="/admin" aria-label="Admin login" title="Admin">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
-            </svg>
-          </Link>
-        </div>
-        <span className="nav-gold-rule" aria-hidden="true" />
-      </header>
+    <div className="store-body store-theme-light store-editorial store-editorial--detail">
+      <StorefrontMarquee />
+      <StorefrontHeader homeLink="/" />
 
       <main className="store-product-detail-main">
-        <nav className="store-product-detail-back" aria-label="Breadcrumb">
-          <Link to="/" className="browse-link">
-            ← Back to shop
-          </Link>
+        <nav className="store-product-detail-back reveal" aria-label="Breadcrumb">
+          <ol className="detail-breadcrumb">
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li>
+              <Link to="/#products">{breadcrumbType}</Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li aria-current="page">{product?.productName || "Product"}</li>
+          </ol>
         </nav>
 
         {loading ? (
-          <div className="store-product-detail-skeleton" aria-busy="true" aria-live="polite">
+          <div className="store-product-detail-skeleton" aria-busy="true">
             <div className="store-product-detail-skeleton-gallery" />
             <div className="store-product-detail-skeleton-body">
               <div className="store-skeleton-line store-skeleton-line--lg" />
@@ -120,114 +140,130 @@ export default function ProductDetailPage() {
         ) : null}
 
         {!loading && error ? (
-          <div className="store-empty-panel store-product-detail-error">
-            <p className="store-empty-title serif">{error}</p>
-            <Link to="/" className="store-hero-btn-primary">
-              Return to catalogue
+          <div className="store-empty-panel store-product-detail-error reveal">
+            <p className="store-empty-title">{error}</p>
+            <Link to="/">
+              <StartStylingButton />
             </Link>
           </div>
         ) : null}
 
         {!loading && product ? (
-          <article className="store-product-detail">
+          <article className="store-product-detail store-product-detail--editorial reveal">
             <div className="store-product-detail-gallery">
-              {images.length ? (
-                <ul className="store-product-detail-images">
-                  {images.map((img, i) => (
-                    <li key={img.publicId || img.url || i}>
-                      <img src={img.url} alt={`${product.productName} — image ${i + 1}`} loading={i === 0 ? "eager" : "lazy"} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="store-product-detail-noimg">No images</div>
-              )}
+              <ProductGallery product={product} productName={product.productName} />
             </div>
 
             <div className="store-product-detail-info">
-              {product.category ? (
-                <p className="store-product-detail-kicker">{product.category}</p>
+              {product.category ? <p className="store-product-detail-kicker">{product.category}</p> : null}
+              <h1 className="store-product-detail-title">{product.productName}</h1>
+
+              <div className="store-product-detail-price store-product-detail-price--large">
+                {hasDiscount ? (
+                  <>
+                    <span className="store-product-detail-price-was">{formatOriginalPrice(product)}</span>
+                    <span className="store-product-detail-price-main store-product-detail-price-main--sale">
+                      {formatPriceAmount(product.discountPrice)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="store-product-detail-price-main">{formatPrice(product)}</span>
+                )}
+              </div>
+
+              {isCombo && comboSavings ? (
+                <p className="detail-combo-savings">Save {comboSavings} on this combo</p>
               ) : null}
-              <h1 className="store-product-detail-title serif">{product.productName}</h1>
-              <p className="store-product-detail-price">
-                <span className="store-product-detail-price-main">{formatPrice(product)}</span>
-                {product.discountPrice && product.discountPrice < product.price ? (
-                  <span className="store-product-detail-price-was">
-                    ₹ {Number(product.price).toLocaleString("en-IN")}.00
-                  </span>
-                ) : null}
-              </p>
 
-              <div className="store-product-detail-meta">
-                <div>
-                  <span className="store-product-detail-label">SKU</span>
-                  <span>{product.sku}</span>
-                </div>
-                <div>
-                  <span className="store-product-detail-label">Stock</span>
-                  <span className={isSoldOut ? "store-product-detail-soldout" : ""}>
-                    {isSoldOut ? "Sold out" : `${product.stock} available`}
-                  </span>
-                </div>
-                <div>
-                  <span className="store-product-detail-label">Sizes</span>
-                  <span>{listText(product.sizes)}</span>
-                </div>
-                <div>
-                  <span className="store-product-detail-label">Colors</span>
-                  <span>{listText(product.colors)}</span>
-                </div>
-                {product.tags?.length ? (
-                  <div className="store-product-detail-tags">
-                    <span className="store-product-detail-label">Tags</span>
-                    <span>{listText(product.tags)}</span>
+              {isCombo ? (
+                <section className="detail-combo-includes" aria-labelledby="combo-includes-heading">
+                  <h2 id="combo-includes-heading" className="detail-section-label">
+                    What&apos;s included
+                  </h2>
+                  {comboIncludes.length ? (
+                    <ul className="detail-combo-list">
+                      {comboIncludes.map((item) => (
+                        <li key={item}>
+                          <span className="detail-combo-star" aria-hidden="true">
+                            ✦
+                          </span>{" "}
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="detail-combo-desc-block">
+                      <p>{product.description}</p>
+                    </div>
+                  )}
+                </section>
+              ) : null}
+
+              {sizes.length ? (
+                <section className="detail-size-guide" aria-labelledby="size-guide-heading">
+                  <h2 id="size-guide-heading" className="detail-section-label">
+                    Select size
+                  </h2>
+                  <div className="detail-size-pills" role="listbox" aria-label="Available sizes">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        role="option"
+                        aria-selected={selectedSize === size}
+                        className={`detail-size-pill${selectedSize === size ? " detail-size-pill--selected" : ""}`}
+                        onClick={() => setSelectedSize(size)}
+                      >
+                        {size}
+                      </button>
+                    ))}
                   </div>
+                </section>
+              ) : null}
+
+              <div className="detail-accordions">
+                {!isCombo || !comboIncludes.length ? (
+                  <AccordionItem id="desc" title="Product description" defaultOpen>
+                    <p>{product.description || "—"}</p>
+                  </AccordionItem>
                 ) : null}
+                <AccordionItem id="material" title="Material & Care">
+                  <p>
+                    {materialCare ||
+                      "Premium fabrics selected for comfort and longevity. Hand wash cold or gentle machine cycle. Do not bleach."}
+                  </p>
+                </AccordionItem>
+                <AccordionItem id="delivery" title="Delivery info">
+                  <p>We ship across India · WhatsApp us for delivery estimates · Usually ships in 2–4 days</p>
+                </AccordionItem>
               </div>
 
-              <div className="store-product-detail-badges">
-                {product.featured ? <span className="store-product-detail-badge">Featured</span> : null}
-                {product.active === false ? <span className="store-product-detail-badge muted">Hidden on shop</span> : null}
-              </div>
-
-              <section className="store-product-detail-desc" aria-labelledby="detail-desc-heading">
-                <h2 id="detail-desc-heading" className="store-product-detail-desc-title">
-                  Details
-                </h2>
-                <p>{product.description}</p>
-              </section>
-
-              <div className="store-product-detail-actions">
-                <a
-                  className="store-hero-btn-primary"
-                  href={isSoldOut ? "#" : makeWhatsappUrl(product)}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-disabled={isSoldOut}
-                  onClick={(e) => {
-                    if (isSoldOut) e.preventDefault();
-                  }}
-                >
-                  <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
-                    <path
-                      fill="currentColor"
-                      d="M16.02 3.2A12.7 12.7 0 0 0 5.1 22.38L3.5 28.8l6.56-1.54a12.72 12.72 0 1 0 5.96-24.06Zm0 22.9c-2 0-3.86-.58-5.44-1.58l-.42-.26-3.9.92.94-3.8-.28-.44A10.1 10.1 0 1 1 16.02 26.1Zm5.86-7.56c-.32-.16-1.9-.94-2.2-1.04-.3-.12-.52-.16-.74.16-.22.32-.84 1.04-1.04 1.26-.18.22-.38.24-.7.08-.32-.16-1.36-.5-2.58-1.6-.96-.86-1.6-1.9-1.8-2.22-.18-.32-.02-.5.14-.66.14-.14.32-.38.48-.56.16-.2.22-.32.32-.54.12-.22.06-.4-.02-.56-.08-.16-.74-1.78-1.02-2.44-.26-.64-.54-.56-.74-.56h-.64c-.22 0-.56.08-.86.4-.3.32-1.14 1.12-1.14 2.72s1.16 3.14 1.32 3.36c.16.22 2.28 3.48 5.52 4.88.78.34 1.38.54 1.84.68.78.24 1.48.2 2.04.12.62-.1 1.9-.78 2.16-1.52.26-.74.26-1.38.18-1.52-.08-.14-.3-.22-.62-.38Z"
-                    />
-                  </svg>
-                  {isSoldOut ? "Sold out" : "Order on WhatsApp"}
-                </a>
+              <div className="store-product-detail-actions store-product-detail-actions--desktop">
+                {isSoldOut ? (
+                  <span className="btn-style-primary btn-style-primary--full btn-style-primary--disabled">
+                    Sold out
+                  </span>
+                ) : (
+                  <StartStylingButton href={waUrl} fullWidth />
+                )}
               </div>
             </div>
           </article>
         ) : null}
       </main>
 
-      <footer className="site-footer site-footer--branded">
-        <Link className="site-footer-logo" to="/" aria-label="The Wyldrift home">
-          <WyldriftLogo className="logo-svg logo-svg--footer" size={34} tone="light" />
-        </Link>
-        <p className="site-footer-copy">© 2026 The Wyldrift. All rights reserved.</p>
-      </footer>
+      {product && !loading ? (
+        <div className="detail-mobile-wa-bar">
+          {isSoldOut ? (
+            <span className="detail-mobile-wa-btn detail-mobile-wa-btn--disabled">Sold out</span>
+          ) : (
+            <StartStylingButton href={waUrl} fullWidth className="detail-mobile-wa-btn" />
+          )}
+        </div>
+      ) : null}
+
+      <StyleStickyBar />
+      <StorefrontFooter />
     </div>
   );
 }
