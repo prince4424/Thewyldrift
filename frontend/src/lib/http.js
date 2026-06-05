@@ -22,6 +22,15 @@ export function resolveApiUrl(url) {
   return `${getApiBase()}${path}`;
 }
 
+/** Headers for cross-origin API calls (e.g. ngrok free-tier browser warning). */
+export function apiRequestHeaders(init) {
+  const headers = new Headers(init);
+  if (getApiBase().includes("ngrok")) {
+    headers.set("ngrok-skip-browser-warning", "1");
+  }
+  return headers;
+}
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -49,7 +58,7 @@ export function generateIdempotencyKey() {
 }
 
 export async function requestJson(url, options = {}) {
-  const headers = new Headers(options.headers || {});
+  const headers = apiRequestHeaders(options.headers || {});
 
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);

@@ -4,7 +4,7 @@ import WyldriftLogo from "./WyldriftLogo.jsx";
 import WyldriftFooter from "./WyldriftFooter.jsx";
 import StartStylingButton from "./StartStylingButton.jsx";
 const MARQUEE_TEXT =
-  "Free delivery on orders over ₹999 · WhatsApp us to check availability · New arrivals every week";
+  "✦ Purple & gold drops · Pick your colour on every fit · Order on WhatsApp · Ships across India ✦";
 
 export function StorefrontMarquee() {
   return (
@@ -38,7 +38,11 @@ export function StorefrontHeader({ homeLink = "#top" }) {
   }, []);
 
   const logo = (
-    <WyldriftLogo className="logo-svg logo-svg--header" size={28} tone={logoOnDark ? "dark" : "light"} />
+    <WyldriftLogo
+      className="logo-svg logo-svg--header"
+      size={28}
+      tone={logoOnDark ? "gold" : "dark"}
+    />
   );
 
   return (

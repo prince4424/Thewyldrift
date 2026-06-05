@@ -5,12 +5,12 @@ const STEPS = [
   {
     num: "01",
     title: "Browse on the site",
-    desc: "Explore combos and singles, check sizes, prices, and photos — all here on Wyldrift.",
+    desc: "Scroll the live catalogue, tap a colour swatch, and peek every shade the team uploaded.",
   },
   {
     num: "02",
     title: "Order on WhatsApp",
-    desc: "Tap Start Styling, tell us what you want, your size, and delivery city. We confirm in chat.",
+    desc: "Hit Start Styling with your colour + size locked in — we confirm stock and delivery in chat.",
   },
   {
     num: "03",

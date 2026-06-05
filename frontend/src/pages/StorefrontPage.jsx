@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import ColorSwatchPicker from "../components/ColorSwatchPicker.jsx";
+import StarfieldBackground from "../components/StarfieldBackground.jsx";
 import HowItWorksSection from "../components/HowItWorksSection.jsx";
 import StartStylingButton from "../components/StartStylingButton.jsx";
 import StyleStickyBar from "../components/StyleStickyBar.jsx";
@@ -9,7 +11,8 @@ import {
   StorefrontMarquee,
   useScrollReveal,
 } from "../components/StorefrontChrome.jsx";
-import { resolveApiUrl } from "../lib/http.js";
+import { apiRequestHeaders, resolveApiUrl } from "../lib/http.js";
+import { getImageForColor, getProductColors, parseSizesForColor } from "../lib/productVariants.js";
 import {
   buildHeroSlidesFromProducts,
   formatOriginalPrice,
@@ -22,9 +25,7 @@ import {
   isComboProduct,
   makeProductWhatsappUrl,
   orderedCategoriesFromProducts,
-  parseSizes,
   pickImage,
-  pickSecondImage,
   resolveHeroSlides,
 } from "../lib/storefront.js";
 
@@ -115,15 +116,15 @@ function EditorialHero({ slides, loading }) {
     <section className="editorial-hero editorial-hero--v2" aria-labelledby="hero-title">
       <div className="editorial-hero-content">
         <span className="editorial-hero-gold-line" aria-hidden="true" />
-        <p className="editorial-hero-kicker">Limited edits · Fresh drops weekly</p>
+        <p className="editorial-hero-kicker">New drops · Purple &amp; gold era</p>
         <h1 id="hero-title" className="editorial-hero-title">
-          <em>Wear what you mean.</em>
+          <em>Main character fits only.</em>
         </h1>
         <div className="editorial-hero-copy">
-          <p className="editorial-hero-sub-lead">Curated combos &amp; singles</p>
+          <p className="editorial-hero-sub-lead">Every piece live from our studio</p>
           <p className="editorial-hero-sub-body">
-            Hand-picked coord sets and standalone pieces — styled with intention, not noise. Browse the
-            collection, choose your fit, and order in one WhatsApp chat.
+            Shop what we upload in admin — tap a colour, lock your size, slide into WhatsApp. No guesswork,
+            just the fit you picked.
           </p>
         </div>
         <div className="editorial-hero-actions">
@@ -286,35 +287,56 @@ function ProductTypeBadge({ product }) {
 }
 
 function ProductCard({ product }) {
-  const image = pickImage(product, product.sku);
-  const imageAlt = pickSecondImage(product, product.sku);
-  const hasSecond = imageAlt !== image;
+  const colorOptions = useMemo(() => getProductColors(product), [product]);
+  const [selectedColor, setSelectedColor] = useState(() => colorOptions[0]?.color ?? "");
+
+  useEffect(() => {
+    const first = colorOptions[0]?.color ?? "";
+    if (!colorOptions.some((c) => c.color === selectedColor)) setSelectedColor(first);
+  }, [product.id, product._id, colorOptions, selectedColor]);
+
+  const image = selectedColor
+    ? getImageForColor(product, selectedColor)
+    : pickImage(product, product.sku);
   const detailId = getProductDetailId(product);
   const detailTo = detailId ? `/product/${encodeURIComponent(detailId)}` : "";
-  const sizes = parseSizes(product);
+  const sizes = parseSizesForColor(product, selectedColor);
+  const soldOut = Number(product.stock) <= 0;
   const hasDiscount =
     product.discountPrice != null && Number(product.discountPrice) < Number(product.price);
-  const waUrl = makeProductWhatsappUrl(product, { pageUrl: getProductDetailUrl(product) });
+  const waUrl = makeProductWhatsappUrl(product, {
+    color: selectedColor || undefined,
+    pageUrl: getProductDetailUrl(product),
+  });
 
   return (
-    <article className="editorial-product-card">
-      <div className="editorial-product-card-media">
+    <article className={`editorial-product-card wz-product-card${soldOut ? " wz-product-card--sold-out" : ""}`}>
+      <div className="editorial-product-card-media wz-product-card__media">
         <ProductTypeBadge product={product} />
+        {soldOut ? <span className="wz-product-card__sold-badge">Sold out</span> : null}
         {detailTo ? (
           <Link to={detailTo} className="editorial-product-card-link" aria-label={`View ${product.productName}`}>
-            <img className="editorial-product-img editorial-product-img--primary" src={image} alt={product.productName} loading="lazy" />
-            {hasSecond ? (
-              <img className="editorial-product-img editorial-product-img--hover" src={imageAlt} alt="" loading="lazy" aria-hidden="true" />
-            ) : null}
+            <img
+              key={`${detailId}-${selectedColor}`}
+              className="editorial-product-img editorial-product-img--primary"
+              src={image}
+              alt={product.productName}
+              loading="lazy"
+            />
           </Link>
         ) : (
-          <img className="editorial-product-img editorial-product-img--primary" src={image} alt={product.productName} loading="lazy" />
+          <img
+            className="editorial-product-img editorial-product-img--primary"
+            src={image}
+            alt={product.productName}
+            loading="lazy"
+          />
         )}
         <div className="editorial-product-card-hover-cta">
           <StartStylingButton href={waUrl} className="btn-style-primary--card" />
         </div>
       </div>
-      <div className="editorial-product-card-body">
+      <div className="editorial-product-card-body wz-product-card__body">
         {product.category ? <span className="editorial-product-tag">{product.category}</span> : null}
         <h3 className="editorial-product-name">
           {detailTo ? <Link to={detailTo}>{product.productName}</Link> : product.productName}
@@ -329,10 +351,25 @@ function ProductCard({ product }) {
             <span>{formatPrice(product)}</span>
           )}
         </p>
+        {colorOptions.length ? (
+          <ColorSwatchPicker
+            colors={colorOptions}
+            selected={selectedColor}
+            onSelect={setSelectedColor}
+            size="sm"
+            showLabel={false}
+            className="wz-product-card__swatches"
+          />
+        ) : null}
         {sizes.length ? (
           <p className="editorial-product-sizes" aria-label="Available sizes">
             {sizes.join(" · ")}
           </p>
+        ) : null}
+        {detailTo ? (
+          <Link to={detailTo} className="wz-product-card__view-link">
+            View details →
+          </Link>
         ) : null}
       </div>
     </article>
@@ -417,15 +454,15 @@ function CatalogSearch({ query, onQueryChange, resultCount, onSubmit }) {
 
 async function fetchHeroProducts() {
   const tryFetch = async (url) => {
-    const r = await fetch(resolveApiUrl(url));
+    const r = await fetch(resolveApiUrl(url), { headers: apiRequestHeaders() });
     if (!r.ok) return [];
     const d = await r.json();
     return d.products || [];
   };
 
-  let list = await tryFetch("/api/products?limit=8&featured=true");
+  let list = await tryFetch("/api/products?limit=8&featured=true&active=true");
   if (buildHeroSlidesFromProducts(list).length < 3) {
-    const more = await tryFetch("/api/products?limit=8");
+    const more = await tryFetch("/api/products?limit=8&active=true");
     const seen = new Set(list.map((p) => p.id || p._id));
     for (const p of more) {
       const id = p.id || p._id;
@@ -460,7 +497,7 @@ export default function StorefrontPage() {
 
   useEffect(() => {
     setProductsLoading(true);
-    fetch(resolveApiUrl("/api/products?limit=100"))
+    fetch(resolveApiUrl("/api/products?limit=100&active=true"), { headers: apiRequestHeaders() })
       .then((r) => r.json())
       .then((d) => setProducts(d.products || []))
       .catch(() => setProducts([]))
@@ -468,7 +505,7 @@ export default function StorefrontPage() {
   }, []);
 
   useEffect(() => {
-    fetch(resolveApiUrl("/api/settings"))
+    fetch(resolveApiUrl("/api/settings"), { headers: apiRequestHeaders() })
       .then((r) => r.json())
       .then((data) => {
         if (data?.settings) {
@@ -481,9 +518,12 @@ export default function StorefrontPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return products;
-    return products.filter((p) =>
-      [p.productName, p.category, p.description, p.sku].join(" ").toLowerCase().includes(q)
-    );
+    return products.filter((p) => {
+      const colors = getProductColors(p)
+        .map((c) => c.color)
+        .join(" ");
+      return [p.productName, p.category, p.description, p.sku, colors].join(" ").toLowerCase().includes(q);
+    });
   }, [products, query]);
 
   const categoryOrder = useMemo(() => orderedCategoriesFromProducts(filtered), [filtered]);
@@ -505,7 +545,8 @@ export default function StorefrontPage() {
   }, [pickedCategory, categoryOrder]);
 
   return (
-    <div className="store-body store-theme-light store-editorial">
+    <div className="store-body store-theme-light store-editorial store-genzy">
+      <StarfieldBackground />
       <StorefrontMarquee />
       <StorefrontHeader homeLink="#top" />
 
@@ -555,6 +596,7 @@ export default function StorefrontPage() {
           ) : null}
 
           <div className="products-section-heading">
+            <p className="products-section-kicker">Live from admin</p>
             <h2 id="products-title" className="products-grid-title">
               <em>{gridTitle}</em>
             </h2>

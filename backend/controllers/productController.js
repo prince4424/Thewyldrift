@@ -39,27 +39,174 @@ async function deleteCloudinaryImages(images = []) {
   await Promise.all(publicIds.map((publicId) => cloudinary.uploader.destroy(publicId)));
 }
 
+function getIndexedImageFiles(req, fieldPrefix) {
+  const map = new Map();
+  const pattern = new RegExp(`^${fieldPrefix}_(\\d+)$`);
+
+  for (const file of req.files || []) {
+    const match = String(file.fieldname).match(pattern);
+    if (match) {
+      map.set(Number(match[1]), file);
+    }
+  }
+
+  return map;
+}
+
+function getVariantImageFiles(req) {
+  return getIndexedImageFiles(req, "variantImage");
+}
+
+function getBannerImageFiles(req) {
+  return getIndexedImageFiles(req, "bannerImage");
+}
+
+function parseJsonArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    return JSON.parse(value);
+  }
+  return [];
+}
+
+async function assertUniqueVariantSkus(variants, excludeProductId = null) {
+  const skus = variants.map((variant) => String(variant.sku).trim().toUpperCase()).filter(Boolean);
+  if (!skus.length) {
+    return;
+  }
+
+  const filter = { "variants.sku": { $in: skus } };
+  if (excludeProductId) {
+    filter._id = { $ne: excludeProductId };
+  }
+
+  const conflict = await Product.findOne(filter).select("productName variants.sku").lean();
+  if (conflict) {
+    const err = new Error("One or more SKUs are already used by another product");
+    err.statusCode = 409;
+    throw err;
+  }
+}
+
+async function buildVariantsFromRequest(req) {
+  const variantsInput = req.body.variants || [];
+  const imageFiles = getVariantImageFiles(req);
+  const built = [];
+
+  for (let index = 0; index < variantsInput.length; index += 1) {
+    const row = variantsInput[index];
+    let image = row.existingImage;
+
+    if (imageFiles.has(index)) {
+      const [uploaded] = await uploadImages([imageFiles.get(index)]);
+      image = uploaded;
+    }
+
+    if (!image?.url || !image?.publicId) {
+      const err = new Error(`Variant row ${index + 1}: product image is required`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    built.push({
+      ...(row._id ? { _id: row._id } : {}),
+      stock: Number(row.stock),
+      sku: String(row.sku).trim().toUpperCase(),
+      color: String(row.color).trim(),
+      size: row.size,
+      image,
+    });
+  }
+
+  return built;
+}
+
+async function buildBannerImagesFromRequest(req) {
+  let input;
+  try {
+    input = parseJsonArray(req.body.bannerImages);
+  } catch {
+    const err = new Error("Invalid banner images payload");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (!Array.isArray(input)) {
+    const err = new Error("Invalid banner images payload");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (input.length > 5) {
+    const err = new Error("At most 5 banner images are allowed");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const imageFiles = getBannerImageFiles(req);
+  const built = [];
+
+  for (let index = 0; index < input.length; index += 1) {
+    const row = input[index];
+    let image = row.existingImage;
+
+    if (imageFiles.has(index)) {
+      const [uploaded] = await uploadImages([imageFiles.get(index)]);
+      image = uploaded;
+    }
+
+    if (!image?.url || !image?.publicId) {
+      continue;
+    }
+
+    built.push(image);
+  }
+
+  if (built.length > 5) {
+    const err = new Error("At most 5 banner images are allowed");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return built;
+}
+
+function collectVariantImages(variants = []) {
+  return variants.map((variant) => variant.image).filter(Boolean);
+}
+
 function normalizeProduct(product) {
   const plain = product.toObject ? product.toObject() : product;
+  const variants = plain.variants || [];
+  const images =
+    plain.images?.length > 0 ? plain.images : variants.map((variant) => variant.image).filter(Boolean);
 
   return {
     ...plain,
     id: String(plain._id),
-    image: plain.images?.[0]?.url || "",
+    image: images?.[0]?.url || variants?.[0]?.image?.url || "",
+    images,
+    variants,
   };
 }
 
 async function createProduct(req, res, next) {
   try {
-    const uploadedImages = await uploadImages(req.files);
-
-    if (!uploadedImages.length) {
-      return res.status(400).json({ success: false, message: "At least one image is required" });
-    }
+    const variants = await buildVariantsFromRequest(req);
+    const bannerImages = await buildBannerImagesFromRequest(req);
+    await assertUniqueVariantSkus(variants);
 
     const product = await Product.create({
-      ...req.body,
-      images: uploadedImages,
+      productName: req.body.productName,
+      description: req.body.description,
+      price: req.body.price,
+      discountPrice: req.body.discountPrice,
+      category: req.body.category,
+      tags: req.body.tags,
+      featured: req.body.featured,
+      active: req.body.active,
+      variants,
+      bannerImages,
     });
 
     return res.status(201).json({
@@ -68,6 +215,9 @@ async function createProduct(req, res, next) {
       product: normalizeProduct(product),
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     return next(error);
   }
 }
@@ -151,25 +301,34 @@ async function updateProduct(req, res, next) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    const existingImages = req.body.existingImages || [];
-    const uploadedImages = await uploadImages(req.files);
-    const nextImages = [...existingImages, ...uploadedImages];
+    const variants = await buildVariantsFromRequest(req);
+    const bannerImages = await buildBannerImagesFromRequest(req);
+    await assertUniqueVariantSkus(variants, product._id);
 
-    if (!nextImages.length) {
-      return res.status(400).json({ success: false, message: "At least one image is required" });
-    }
-
-    const removedImages = product.images.filter(
+    const previousImages = collectVariantImages(product.variants || []);
+    const nextImages = collectVariantImages(variants);
+    const removedVariantImages = previousImages.filter(
       (oldImage) => !nextImages.some((image) => image.publicId === oldImage.publicId)
     );
 
-    Object.assign(product, {
-      ...req.body,
-      images: nextImages,
-    });
+    const previousBanners = product.bannerImages || [];
+    const removedBannerImages = previousBanners.filter(
+      (oldImage) => !bannerImages.some((image) => image.publicId === oldImage.publicId)
+    );
+
+    product.productName = req.body.productName;
+    product.description = req.body.description;
+    product.price = req.body.price;
+    product.discountPrice = req.body.discountPrice;
+    product.category = req.body.category;
+    product.tags = req.body.tags;
+    product.featured = req.body.featured;
+    product.active = req.body.active;
+    product.variants = variants;
+    product.bannerImages = bannerImages;
 
     await product.save();
-    await deleteCloudinaryImages(removedImages);
+    await deleteCloudinaryImages([...removedVariantImages, ...removedBannerImages]);
 
     return res.json({
       success: true,
@@ -177,6 +336,9 @@ async function updateProduct(req, res, next) {
       product: normalizeProduct(product),
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     return next(error);
   }
 }
@@ -189,7 +351,12 @@ async function deleteProduct(req, res, next) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    await deleteCloudinaryImages(product.images);
+    const images = [
+      ...(product.bannerImages || []),
+      ...(product.images || []),
+      ...collectVariantImages(product.variants || []),
+    ];
+    await deleteCloudinaryImages(images);
     await product.deleteOne();
 
     return res.json({ success: true, message: "Product deleted" });

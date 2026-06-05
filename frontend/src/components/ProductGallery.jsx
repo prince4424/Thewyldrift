@@ -1,8 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getImagesForColor } from "../lib/productVariants.js";
 import { getProductImages } from "../lib/storefront.js";
 
-export default function ProductGallery({ product, productName }) {
-  const images = getProductImages(product);
+export default function ProductGallery({ product, productName, selectedColor }) {
+  const images = useMemo(() => {
+    if (selectedColor) {
+      const forColor = getImagesForColor(product, selectedColor);
+      if (forColor.length) return forColor;
+    }
+    return getProductImages(product);
+  }, [product, selectedColor]);
+
   const [active, setActive] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [fadeKey, setFadeKey] = useState(0);
@@ -10,6 +18,11 @@ export default function ProductGallery({ product, productName }) {
   const count = images.length;
   const hasMultiple = count > 1;
   const trackRef = useRef(null);
+
+  useEffect(() => {
+    setActive(0);
+    setFadeKey((k) => k + 1);
+  }, [selectedColor, images.length]);
 
   useEffect(() => {
     const track = trackRef.current;

@@ -5,12 +5,30 @@ const mongoose = require("mongoose");
 const connectDb = require("../config/db");
 const Product = require("../models/Product");
 
-const CATEGORIES = [
-  { name: "T-Shirts", skuPrefix: "TEE" },
-  { name: "Jeans", skuPrefix: "JEA" },
-  { name: "Shoes", skuPrefix: "SHO" },
-  { name: "Shirts", skuPrefix: "SRT" },
-];
+const { PRODUCT_CATEGORIES } = require("../constants/productCategories");
+
+const SKU_PREFIX = {
+  "T-Shirts": "TEE",
+  Shirts: "SRT",
+  Jeans: "JEA",
+  Trousers: "TRS",
+  Shorts: "SHT",
+  Jackets: "JKT",
+  Hoodies: "HOD",
+  Shoes: "SHO",
+  Socks: "SOC",
+  Underwear: "UND",
+  Sleepwear: "SLP",
+  Loungewear: "LNG",
+  Activewear: "ACT",
+  Dresses: "DRS",
+  Accessories: "ACC",
+};
+
+const CATEGORIES = PRODUCT_CATEGORIES.map((name) => ({
+  name,
+  skuPrefix: SKU_PREFIX[name] || "PRD",
+}));
 
 function money(min, max) {
   return Math.round(min + Math.random() * (max - min));
@@ -48,6 +66,16 @@ function buildProduct(category, idx, globalIdx) {
 
   const basePrice = category.name === "Shoes" ? money(2499, 7999) : money(899, 3999);
   const discounted = Math.random() < 0.55 ? Math.max(199, basePrice - money(100, 900)) : null;
+  const baseSku = uniqueSku(category.skuPrefix, idx);
+  const image = makeImages(category.name, globalIdx)[0];
+  const sizes = ["S", "M", "L", "XL"];
+  const variants = sizes.map((size) => ({
+    stock: money(0, 8),
+    sku: `${baseSku}-${size}`,
+    color,
+    size,
+    image,
+  }));
 
   return {
     productName: `${drop} ${fit} ${category.name.slice(0, -1)} — ${color}`,
@@ -55,17 +83,15 @@ function buildProduct(category, idx, globalIdx) {
     price: basePrice,
     discountPrice: discounted,
     category: category.name,
-    stock: money(0, 25),
-    sku: uniqueSku(category.skuPrefix, idx),
-    sizes:
-      category.name === "Shoes"
-        ? ["6", "7", "8", "9", "10"]
-        : ["S", "M", "L", "XL"],
+    stock: variants.reduce((sum, variant) => sum + variant.stock, 0),
+    sku: baseSku,
+    sizes,
     colors: [color],
     tags: ["streetwear", "premium", "drop", category.name.toLowerCase()],
     featured: globalIdx % 7 === 0,
     active: true,
-    images: makeImages(category.name, globalIdx),
+    images: [image],
+    variants,
   };
 }
 

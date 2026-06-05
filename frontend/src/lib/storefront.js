@@ -1,3 +1,5 @@
+import { PRODUCT_CATEGORIES } from "./categories.js";
+
 export const WHATSAPP_BUSINESS_NUMBER = "917719672237";
 
 const START_STYLING_MESSAGE = "Hey Wyldrift! 🔥 Just checked out your collection and I'm obsessed! Ready to order — can you help me out? 🛍️✨";
@@ -29,7 +31,7 @@ export function getHeroSlideshowImages() {
 export function buildHeroSlidesFromProducts(products) {
   const slides = [];
   for (const p of products || []) {
-    const url = p.images?.[0]?.url || p.image;
+    const url = p.bannerImages?.[0]?.url || p.images?.[0]?.url || p.image;
     if (!isRealProductImageUrl(url)) continue;
     const productId = getProductDetailId(p);
     slides.push({
@@ -140,6 +142,13 @@ export function parseComboIncludes(description) {
 
 export function getProductImages(product) {
   if (!product) return [];
+  if (Array.isArray(product.bannerImages) && product.bannerImages.length) {
+    return product.bannerImages.filter((img) => img?.url);
+  }
+  if (Array.isArray(product.variants) && product.variants.length) {
+    const fromVariants = product.variants.map((v) => v.image).filter((img) => img?.url);
+    if (fromVariants.length) return fromVariants;
+  }
   if (Array.isArray(product.gallery) && product.gallery.length) {
     return product.gallery.map((g) => (typeof g === "string" ? { url: g } : g)).filter((g) => g?.url);
   }
@@ -182,6 +191,11 @@ export function getProductDetailUrl(product) {
 }
 
 export function parseSizes(product) {
+  if (Array.isArray(product?.variants) && product.variants.length) {
+    const order = ["S", "M", "L", "XL", "XXL"];
+    const sizes = [...new Set(product.variants.map((v) => String(v.size || "").trim()).filter(Boolean))];
+    return sizes.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  }
   if (Array.isArray(product?.sizes) && product.sizes.length) {
     return product.sizes.map((s) => String(s).trim()).filter(Boolean);
   }
@@ -198,18 +212,19 @@ export function parseSizes(product) {
   return [];
 }
 
-export function makeProductWhatsappUrl(product, { size, pageUrl } = {}) {
+export function makeProductWhatsappUrl(product, { size, color, pageUrl } = {}) {
   const price = formatPrice(product);
   const url = pageUrl || getProductDetailUrl(product);
   const parts = [
     `Hi, I'm interested in ${product.productName} - ${price}.`,
+    color ? `Colour: ${color}.` : null,
     size ? `Size: ${size}.` : null,
     url ? `Product Link: ${url}` : null,
   ].filter(Boolean);
   return `https://wa.me/${WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(parts.join(" "))}`;
 }
 
-export const CATEGORY_DISPLAY_ORDER = ["T-Shirts", "Jeans", "Shoes", "Shirts"];
+export const CATEGORY_DISPLAY_ORDER = PRODUCT_CATEGORIES;
 
 export function getProductCategoryLabel(product) {
   const c = product?.category;

@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import ColorSwatchPicker from "../components/ColorSwatchPicker.jsx";
+import StarfieldBackground from "../components/StarfieldBackground.jsx";
 import ProductGallery from "../components/ProductGallery.jsx";
 import StartStylingButton from "../components/StartStylingButton.jsx";
 import StyleStickyBar from "../components/StyleStickyBar.jsx";
@@ -10,6 +12,7 @@ import {
   useScrollReveal,
 } from "../components/StorefrontChrome.jsx";
 import { getProductById } from "../lib/products.js";
+import { getProductColors, parseSizesForColor } from "../lib/productVariants.js";
 import {
   formatOriginalPrice,
   formatPrice,
@@ -18,7 +21,6 @@ import {
   isComboProduct,
   makeProductWhatsappUrl,
   parseComboIncludes,
-  parseSizes,
 } from "../lib/storefront.js";
 
 function AccordionItem({ id, title, children, defaultOpen = false }) {
@@ -52,6 +54,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
 
   useScrollReveal([loading, product?.id]);
 
@@ -71,6 +74,8 @@ export default function ProductDetailPage() {
         else {
           setProduct(p);
           setSelectedSize("");
+          const colors = getProductColors(p);
+          setSelectedColor(colors[0]?.color ?? "");
         }
       })
       .catch((e) => {
@@ -86,9 +91,21 @@ export default function ProductDetailPage() {
     };
   }, [id]);
 
+  const colorOptions = useMemo(() => (product ? getProductColors(product) : []), [product]);
   const isSoldOut = product && Number(product.stock) <= 0;
   const isCombo = product ? isComboProduct(product) : false;
-  const sizes = product ? parseSizes(product) : [];
+  const sizes = product ? parseSizesForColor(product, selectedColor) : [];
+
+  useEffect(() => {
+    if (!product) return;
+    if (!colorOptions.some((c) => c.color === selectedColor)) {
+      setSelectedColor(colorOptions[0]?.color ?? "");
+    }
+  }, [product, colorOptions, selectedColor]);
+
+  useEffect(() => {
+    setSelectedSize("");
+  }, [selectedColor]);
   const hasDiscount =
     product?.discountPrice != null && Number(product.discountPrice) < Number(product.price);
   const comboSavings = product ? getComboSavings(product) : null;
@@ -97,6 +114,7 @@ export default function ProductDetailPage() {
   const waUrl =
     product && !isSoldOut
       ? makeProductWhatsappUrl(product, {
+          color: selectedColor || undefined,
           size: selectedSize || undefined,
           pageUrl: typeof window !== "undefined" ? window.location.href : undefined,
         })
@@ -109,7 +127,8 @@ export default function ProductDetailPage() {
   const breadcrumbType = isCombo ? "Combos" : "Singles";
 
   return (
-    <div className="store-body store-theme-light store-editorial store-editorial--detail">
+    <div className="store-body store-theme-light store-editorial store-genzy store-editorial--detail">
+      <StarfieldBackground />
       <StorefrontMarquee />
       <StorefrontHeader homeLink="/" />
 
@@ -151,7 +170,11 @@ export default function ProductDetailPage() {
         {!loading && product ? (
           <article className="store-product-detail store-product-detail--editorial reveal">
             <div className="store-product-detail-gallery">
-              <ProductGallery product={product} productName={product.productName} />
+              <ProductGallery
+                product={product}
+                productName={product.productName}
+                selectedColor={selectedColor || undefined}
+              />
             </div>
 
             <div className="store-product-detail-info">
@@ -196,6 +219,21 @@ export default function ProductDetailPage() {
                       <p>{product.description}</p>
                     </div>
                   )}
+                </section>
+              ) : null}
+
+              {colorOptions.length ? (
+                <section className="detail-color-guide" aria-labelledby="color-guide-heading">
+                  <h2 id="color-guide-heading" className="detail-section-label">
+                    Pick your colour
+                  </h2>
+                  <ColorSwatchPicker
+                    colors={colorOptions}
+                    selected={selectedColor}
+                    onSelect={setSelectedColor}
+                    size="lg"
+                    showLabel={false}
+                  />
                 </section>
               ) : null}
 

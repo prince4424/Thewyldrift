@@ -1,49 +1,93 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import WyldriftLogo from "../components/WyldriftLogo.jsx";
 import ToastStack from "../components/ToastStack.jsx";
 import { useToasts } from "../hooks/useToasts.js";
 import { clearToken, getToken, requestJson, setToken } from "../lib/http.js";
+import { DEFAULT_PRODUCT_CATEGORY, PRODUCT_CATEGORIES } from "../lib/categories.js";
+import ProductColorMatrix from "../components/ProductColorMatrix.jsx";
 import { createProduct, deleteProduct, getAllProducts, updateProduct } from "../lib/products.js";
+import {
+  emptyColorGroup,
+  flattenColorGroups,
+  generateSkusForColorGroups,
+  productToColorGroups,
+  validateColorGroups,
+} from "../lib/variantMatrix.js";
+
+function newClientKey() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `variant-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 function formatPrice(product) {
   const amount = product.discountPrice || product.price;
   return `Rs. ${Number(amount).toLocaleString("en-IN")}`;
 }
 
-function toCsvArray(value) {
-  return String(value || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+const MAX_BANNER_IMAGES = 5;
+
+function emptyBannerSlot() {
+  return {
+    clientKey: newClientKey(),
+    existingImage: null,
+    imageFile: null,
+  };
 }
 
-function toCommaString(list) {
-  return Array.isArray(list) ? list.join(", ") : "";
+function productToBannerRows(product) {
+  if (!Array.isArray(product?.bannerImages) || !product.bannerImages.length) {
+    return [];
+  }
+
+  return product.bannerImages.map((image) => ({
+    clientKey: newClientKey(),
+    existingImage: image,
+    imageFile: null,
+  }));
 }
 
-function buildFormData(form, existingImagesJson, imageFiles) {
+function buildFormData(form, variants, banners = []) {
   const data = new FormData();
-  const existingImages = existingImagesJson || "[]";
 
-  [
-    "productName",
-    "category",
-    "price",
-    "discountPrice",
-    "stock",
-    "sku",
-    "sizes",
-    "colors",
-    "tags",
-    "description",
-  ].forEach((key) => data.append(key, form[key] ?? ""));
+  ["productName", "category", "price", "discountPrice", "description"].forEach((key) => {
+    data.append(key, form[key] ?? "");
+  });
 
   data.append("featured", Boolean(form.featured));
   data.append("active", Boolean(form.active));
-  data.append("existingImages", existingImages);
 
-  (imageFiles || []).forEach((file) => data.append("images", file));
+  const filledBanners = banners.filter((row) => row.existingImage || row.imageFile);
+  const bannerPayload = filledBanners.map((row) => ({
+    ...(row.existingImage && !row.imageFile ? { existingImage: row.existingImage } : {}),
+  }));
+  data.append("bannerImages", JSON.stringify(bannerPayload));
+
+  filledBanners.forEach((row, index) => {
+    if (row.imageFile) {
+      data.append(`bannerImage_${index}`, row.imageFile);
+    }
+  });
+
+  const payload = variants.map((variant) => ({
+    ...(variant._id ? { _id: variant._id } : {}),
+    stock: Number(variant.stock) || 0,
+    sku: variant.sku,
+    color: variant.color,
+    size: variant.size,
+    ...(variant.existingImage && !variant.imageFile ? { existingImage: variant.existingImage } : {}),
+  }));
+
+  data.append("variants", JSON.stringify(payload));
+
+  variants.forEach((variant, index) => {
+    if (variant.imageFile) {
+      data.append(`variantImage_${index}`, variant.imageFile);
+    }
+  });
+
   return data;
 }
 
@@ -62,30 +106,23 @@ export default function AdminPage() {
     homeCategoryKicker: "Shop",
     homeCategoryTitle: "By Category",
     homeLatestTitle: "Latest Products",
-    homeFeaturedCategory: "T-Shirts",
+    homeFeaturedCategory: DEFAULT_PRODUCT_CATEGORY,
     cartBadge: 44,
   });
 
   const [form, setForm] = useState({
     id: "",
     productName: "",
-    category: "T-Shirts",
+    category: DEFAULT_PRODUCT_CATEGORY,
     price: "",
     discountPrice: "",
-    stock: 1,
-    sku: "",
-    sizes: "",
-    colors: "",
-    tags: "",
     description: "",
     featured: false,
     active: true,
   });
 
-  const [existingImagesJson, setExistingImagesJson] = useState("[]");
-  const [savedImages, setSavedImages] = useState([]);
-  const [localFiles, setLocalFiles] = useState([]);
-  const fileInputRef = useRef(null);
+  const [colorGroups, setColorGroups] = useState([emptyColorGroup()]);
+  const [banners, setBanners] = useState([]);
 
   async function load() {
     setBusy(true);
@@ -106,7 +143,9 @@ export default function AdminPage() {
     requestJson("/api/admin/settings")
       .then((data) => {
         const s = { ...(data.settings || {}) };
-        if (s.homeFeaturedCategory === "Accessories") s.homeFeaturedCategory = "Shirts";
+        if (!PRODUCT_CATEGORIES.includes(s.homeFeaturedCategory)) {
+          s.homeFeaturedCategory = DEFAULT_PRODUCT_CATEGORY;
+        }
         setSettings((prev) => ({ ...prev, ...s }));
       })
       .catch(() => {});
@@ -119,9 +158,13 @@ export default function AdminPage() {
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return products;
-    return products.filter((p) =>
-      [p.productName, p.category, p.sku, p.description, (p.tags || []).join(" ")].join(" ").toLowerCase().includes(q)
-    );
+    return products.filter((p) => {
+      const variantSkus = (p.variants || []).map((v) => v.sku).join(" ");
+      return [p.productName, p.category, p.sku, variantSkus, p.description, (p.tags || []).join(" ")]
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    });
   }, [products, query]);
 
   const stats = useMemo(() => {
@@ -160,47 +203,65 @@ export default function AdminPage() {
     setForm({
       id: "",
       productName: "",
-      category: "T-Shirts",
+      category: DEFAULT_PRODUCT_CATEGORY,
       price: "",
       discountPrice: "",
-      stock: 1,
-      sku: "",
-      sizes: "",
-      colors: "",
-      tags: "",
       description: "",
       featured: false,
       active: true,
     });
-    setExistingImagesJson("[]");
-    setSavedImages([]);
-    setLocalFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setColorGroups([emptyColorGroup()]);
+    setBanners([]);
   }
 
   function editProduct(product) {
     setForm({
       id: product.id,
       productName: product.productName,
-      category: product.category === "Accessories" ? "Shirts" : product.category,
+      category: PRODUCT_CATEGORIES.includes(product.category) ? product.category : DEFAULT_PRODUCT_CATEGORY,
       price: product.price,
       discountPrice: product.discountPrice || "",
-      stock: product.stock,
-      sku: product.sku,
-      sizes: toCommaString(product.sizes),
-      colors: toCommaString(product.colors),
-      tags: toCommaString(product.tags),
       description: product.description,
       featured: Boolean(product.featured),
       active: Boolean(product.active),
     });
-    const images = product.images || [];
-    setExistingImagesJson(JSON.stringify(images));
-    setSavedImages(images);
-    setLocalFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setColorGroups(productToColorGroups(product));
+    setBanners(productToBannerRows(product));
     setAdminPanel("add");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function updateBanner(clientKey, patch) {
+    setBanners((rows) => rows.map((row) => (row.clientKey === clientKey ? { ...row, ...patch } : row)));
+  }
+
+  function addBannerSlot() {
+    setBanners((rows) => (rows.length >= MAX_BANNER_IMAGES ? rows : [...rows, emptyBannerSlot()]));
+  }
+
+  function removeBannerSlot(clientKey) {
+    setBanners((rows) => rows.filter((row) => row.clientKey !== clientKey));
+  }
+
+  function updateColorGroup(clientKey, patch) {
+    setColorGroups((rows) => rows.map((row) => (row.clientKey === clientKey ? { ...row, ...patch } : row)));
+  }
+
+  function addColorGroup() {
+    setColorGroups((rows) => [...rows, emptyColorGroup()]);
+  }
+
+  function removeColorGroup(clientKey) {
+    setColorGroups((rows) => (rows.length <= 1 ? rows : rows.filter((row) => row.clientKey !== clientKey)));
+  }
+
+  function autoGenerateAllSkus() {
+    if (!form.productName?.trim()) {
+      addToast("Product name required", "Enter a product name before generating SKUs.", "danger");
+      return;
+    }
+    setColorGroups((rows) => generateSkusForColorGroups(form, rows));
+    addToast("SKUs generated", "SKUs filled for every color × size.", "success");
   }
 
   async function onSubmit(e) {
@@ -208,15 +269,18 @@ export default function AdminPage() {
     setBusy(true);
     setFormError("");
     setFieldErrors({});
+
+    const matrixError = validateColorGroups(colorGroups);
+    if (matrixError) {
+      setFormError(matrixError);
+      setBusy(false);
+      return;
+    }
+
+    const variants = flattenColorGroups(colorGroups);
+
     try {
-      const payload = {
-        ...form,
-        sizes: form.sizes,
-        colors: form.colors,
-        tags: form.tags,
-      };
-      // Server expects CSV strings; it parses them.
-      const data = buildFormData(payload, existingImagesJson, localFiles);
+      const data = buildFormData(form, variants, banners);
       const wasUpdate = Boolean(form.id);
       if (form.id) await updateProduct(form.id, data);
       else await createProduct(data);
@@ -313,7 +377,7 @@ export default function AdminPage() {
                 </section>
 
                 <section className="admin-hub" aria-label="Choose a task">
-                  <p className="admin-hub-lede">Pick one step. The product form is unchanged — same fields as before.</p>
+                  <p className="admin-hub-lede">Pick one step. Add apparel by color, sizes, and stock in a grid.</p>
                   <div className="admin-hub-grid">
                     <button
                       type="button"
@@ -325,7 +389,7 @@ export default function AdminPage() {
                     >
                       <span className="admin-hub-card-kicker">Create</span>
                       <span className="admin-hub-card-title">Add new product</span>
-                      <span className="admin-hub-card-desc">Full add / edit form with every field you already use.</span>
+                      <span className="admin-hub-card-desc">Name, banners, price, then colors with sizes and stock in a simple grid.</span>
                     </button>
                     <button type="button" className="admin-hub-card" onClick={() => setAdminPanel("list")}>
                       <span className="admin-hub-card-kicker">Manage</span>
@@ -362,7 +426,9 @@ export default function AdminPage() {
                     <p className="admin-form-kicker">Catalogue</p>
                     <h2 className="admin-form-title serif">{form.id ? "Update product" : "Add product"}</h2>
                     <p className="admin-form-lede">
-                      {form.id ? "Editing the selected product. Save to push changes live." : "Create a new product. At least one image is required to save."}
+                      {form.id
+                        ? "Editing the selected product. Save to push changes live."
+                        : "Add each color once, pick its sizes, set stock in the grid, and upload one photo per color."}
                     </p>
                   </div>
 
@@ -383,19 +449,73 @@ export default function AdminPage() {
                     <label>
                       Category
                       <select value={form.category} onChange={(e) => setForm((s) => ({ ...s, category: e.target.value }))}>
-                        <option value="T-Shirts">T-Shirts</option>
-                        <option value="Jeans">Jeans</option>
-                        <option value="Shoes">Shoes</option>
-                        <option value="Shirts">Shirts</option>
+                        {PRODUCT_CATEGORIES.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
                       </select>
                     </label>
+                  </div>
+
+                  <div className="admin-form-section">
+                    <div className="admin-variant-section-head">
+                      <div>
+                        <h3 className="admin-form-section-title">Banner images</h3>
+                        <p className="admin-form-hint">
+                          Optional gallery images for the product page. Add up to {MAX_BANNER_IMAGES} (shown before variant photos).
+                        </p>
+                      </div>
+                      {banners.length < MAX_BANNER_IMAGES ? (
+                        <button type="button" className="secondary-button admin-variant-add" onClick={addBannerSlot}>
+                          + Add banner
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {banners.length ? (
+                      <div className="admin-banner-list">
+                        {banners.map((row, index) => (
+                          <article key={row.clientKey} className="admin-banner-card">
+                            <div className="admin-variant-card-head">
+                              <strong>Banner {index + 1}</strong>
+                              <button type="button" className="admin-variant-remove" onClick={() => removeBannerSlot(row.clientKey)}>
+                                Remove
+                              </button>
+                            </div>
+
+                            <label className="admin-file-field admin-variant-image-field">
+                              <span className="admin-file-label-text">Banner image</span>
+                              <input
+                                className="admin-input-file"
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp,image/avif"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null;
+                                  updateBanner(row.clientKey, { imageFile: file });
+                                }}
+                              />
+                            </label>
+
+                            <VariantImagePreview
+                              file={row.imageFile}
+                              savedUrl={!row.imageFile ? row.existingImage?.url : null}
+                              label={row.imageFile ? "New" : "Saved"}
+                              emptyMessage="Choose an image for this banner slot."
+                            />
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="admin-form-hint admin-banner-empty">No banner images yet. Use “Add banner” if you want a product gallery.</p>
+                    )}
                   </div>
 
                   <div className="admin-form-section">
                     <h3 className="admin-form-section-title">Pricing</h3>
                     <div className="form-grid-2">
                       <label>
-                        Price (₹)
+                        Price each unit (₹)
                         <input
                           value={form.price}
                           onChange={(e) => setForm((s) => ({ ...s, price: e.target.value }))}
@@ -407,7 +527,7 @@ export default function AdminPage() {
                       </label>
 
                       <label>
-                        Discount price
+                        Discount price (optional)
                         <input
                           value={form.discountPrice}
                           onChange={(e) => setForm((s) => ({ ...s, discountPrice: e.target.value }))}
@@ -421,95 +541,14 @@ export default function AdminPage() {
                   </div>
 
                   <div className="admin-form-section">
-                    <h3 className="admin-form-section-title">Inventory</h3>
-                    <div className="form-grid-2">
-                      <label>
-                        Stock
-                        <input
-                          value={form.stock}
-                          onChange={(e) => setForm((s) => ({ ...s, stock: e.target.value }))}
-                          type="number"
-                          min="0"
-                          step="1"
-                          required
-                        />
-                      </label>
-
-                      <label>
-                        SKU
-                        <input value={form.sku} onChange={(e) => setForm((s) => ({ ...s, sku: e.target.value }))} required />
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="admin-form-section">
-                    <h3 className="admin-form-section-title">Attributes</h3>
-                    <p className="admin-form-hint">Comma-separated lists.</p>
-                    <div className="form-grid-3">
-                      <label>
-                        Sizes
-                        <input
-                          value={form.sizes}
-                          onChange={(e) => setForm((s) => ({ ...s, sizes: e.target.value }))}
-                          placeholder="S, M, L, XL"
-                        />
-                      </label>
-
-                      <label>
-                        Colors
-                        <input
-                          value={form.colors}
-                          onChange={(e) => setForm((s) => ({ ...s, colors: e.target.value }))}
-                          placeholder="Black, White"
-                        />
-                      </label>
-
-                      <label>
-                        Tags
-                        <input
-                          value={form.tags}
-                          onChange={(e) => setForm((s) => ({ ...s, tags: e.target.value }))}
-                          placeholder="streetwear, new"
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="admin-form-section">
-                    <h3 className="admin-form-section-title">Images</h3>
-                    <p className="admin-form-hint">PNG, JPEG, WebP or AVIF — up to 8 files.</p>
-                    <label className="admin-file-field">
-                      <span className="admin-file-label-text">Choose files</span>
-                      <input
-                        ref={fileInputRef}
-                        className="admin-input-file"
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/avif"
-                        multiple
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          setLocalFiles(files);
-                        }}
-                      />
-                    </label>
-
-                    <div className="image-preview image-preview--admin" aria-label="Image preview">
-                      {localFiles.length || savedImages.length ? (
-                        <>
-                          {localFiles.map((f) => (
-                            <PreviewTile key={f.name + f.size} file={f} label="New" />
-                          ))}
-                          {savedImages.map((img) => (
-                            <div key={img.publicId || img.url}>
-                              <img src={img.url} alt="Product image" loading="lazy" />
-                              <span>Saved</span>
-                            </div>
-                          ))}
-                        </>
-                      ) : (
-                        <p className="image-preview-empty">No images yet. Add files above.</p>
-                      )}
-                    </div>
+                    <ProductColorMatrix
+                      colorGroups={colorGroups}
+                      productName={form.productName}
+                      onChangeGroup={updateColorGroup}
+                      onAddColor={addColorGroup}
+                      onRemoveColor={removeColorGroup}
+                      onAutoGenerateSkus={autoGenerateAllSkus}
+                    />
                   </div>
 
                   <div className="admin-form-section">
@@ -611,19 +650,25 @@ export default function AdminPage() {
                   {visibleProducts.length ? (
                     visibleProducts.map((p) => (
                       <article key={p.id} className="admin-product-card">
-                        <img src={p.images?.[0]?.url || p.image || ""} alt={p.productName} loading="lazy" />
+                        <img src={p.bannerImages?.[0]?.url || p.images?.[0]?.url || p.image || ""} alt={p.productName} loading="lazy" />
                         <div className="admin-product-main">
                           <div>
                             <h3>{p.productName}</h3>
                             <p>
-                              {p.category} | {formatPrice(p)} | {p.sku}
+                              {p.category} | {formatPrice(p)} | {(p.variants || []).length || 1} variant
+                              {(p.variants || []).length === 1 ? "" : "s"}
                             </p>
                           </div>
                           <p className="admin-product-desc">{p.description}</p>
                           <div className="admin-badges">
                             <span>{p.active ? "Live" : "Hidden"}</span>
                             <span>{p.featured ? "Featured" : "Standard"}</span>
-                            <span className={Number(p.stock) <= 0 ? "danger" : ""}>{p.stock} in stock</span>
+                            <span className={Number(p.stock) <= 0 ? "danger" : ""}>
+                              {p.stock} total stock
+                              {(p.variants || []).length
+                                ? ` · ${[...new Set((p.variants || []).map((v) => v.size))].join(", ")}`
+                                : ""}
+                            </span>
                           </div>
                         </div>
                         <div className="admin-card-actions">
@@ -700,13 +745,14 @@ export default function AdminPage() {
                 <label>
                   Featured category (section order)
                   <select
-                    value={settings.homeFeaturedCategory || "T-Shirts"}
+                    value={settings.homeFeaturedCategory || DEFAULT_PRODUCT_CATEGORY}
                     onChange={(e) => setSettings((s) => ({ ...s, homeFeaturedCategory: e.target.value }))}
                   >
-                    <option value="T-Shirts">T-Shirts</option>
-                    <option value="Jeans">Jeans</option>
-                    <option value="Shoes">Shoes</option>
-                    <option value="Shirts">Shirts</option>
+                    {PRODUCT_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label>
@@ -782,18 +828,77 @@ function LoginCard({ disabled, onLogin }) {
   );
 }
 
-function PreviewTile({ file, label }) {
-  const [src, setSrc] = useState("");
+function VariantImagePreview({ file, savedUrl, label, emptyMessage = "Image required for this row." }) {
+  const [objectUrl, setObjectUrl] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
   useEffect(() => {
+    if (!file) {
+      setObjectUrl("");
+      return undefined;
+    }
     const url = URL.createObjectURL(file);
-    setSrc(url);
+    setObjectUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return undefined;
+
+    const onKey = (event) => {
+      if (event.key === "Escape") setLightboxOpen(false);
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [lightboxOpen]);
+
+  const previewSrc = objectUrl || savedUrl || "";
+
+  if (!previewSrc) {
+    return (
+      <div className="admin-variant-preview admin-variant-preview--empty" aria-label="Variant image preview">
+        <p className="image-preview-empty">{emptyMessage}</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <img src={src} alt="Product image" loading="lazy" />
-      <span>{label}</span>
-    </div>
+    <>
+      <div className="admin-variant-preview" aria-label="Variant image preview">
+        <button
+          type="button"
+          className="admin-variant-preview-frame"
+          onClick={() => setLightboxOpen(true)}
+          aria-label={`View full size — ${label}`}
+        >
+          <img src={previewSrc} alt="Product preview" loading="lazy" />
+          <span className="admin-variant-preview-badge">{label}</span>
+          <span className="admin-variant-preview-hint">Tap to view full size</span>
+        </button>
+      </div>
+
+      {lightboxOpen ? (
+        <div
+          className="admin-image-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full size product image"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button type="button" className="admin-image-lightbox-close" onClick={() => setLightboxOpen(false)}>
+            Close
+          </button>
+          <img src={previewSrc} alt="Product full view" onClick={(e) => e.stopPropagation()} />
+        </div>
+      ) : null}
+    </>
   );
 }
 
