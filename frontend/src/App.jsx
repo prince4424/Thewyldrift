@@ -1,5 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import WyldriftLandingPage from "./pages/WyldriftLandingPage.jsx";
+import JoinDropPage from "./pages/JoinDropPage.jsx";
 import StorefrontPage from "./pages/StorefrontPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 
@@ -18,7 +20,9 @@ function ProductDetailFallback() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<StorefrontPage />} />
+      <Route path="/" element={<WyldriftLandingPage />} />
+      <Route path="/join" element={<JoinDropPage />} />
+      <Route path="/shop" element={<StorefrontPage />} />
       <Route
         path="/product/:id"
         element={

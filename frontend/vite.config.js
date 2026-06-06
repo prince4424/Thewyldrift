@@ -4,8 +4,11 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
+    port: 3000,
+    strictPort: false,
     proxy: {
-      // Use the UI at this dev server (e.g. :5173); `/api/*` is forwarded to the Express API.
+      // `/api/*` is forwarded to the Express API on :8080
       "/api": { target: "http://127.0.0.1:8080", changeOrigin: true },
     },
   },
