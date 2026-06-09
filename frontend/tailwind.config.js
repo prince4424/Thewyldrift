@@ -4,18 +4,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        cream: "#F2EDE6",
-        surface: "#FFFFFF",
+        cream: "#F2EBE0",
+        surface: "#14100C",
         brown: "#5C3D2E",
-        espresso: "#2C1A0E",
-        brownDark: "#3B2314",
+        espresso: "#0D0A08",
+        brownDark: "#2C1A0E",
         gold: "#D4AF37",
-        text: "#1A1A1A",
+        champagne: "#E8D5A3",
+        burgundy: "#722F37",
+        text: "#F2EBE0",
         muted: "#9A8C82",
-        badge: "#E8622A",
+        badge: "#C47A3A",
         wyld: {
-          dark: "#0a0a0a",
-          light: "#ffffff",
+          dark: "#0D0A08",
+          light: "#F2EBE0",
           accent: "#D4AF37",
         },
       },

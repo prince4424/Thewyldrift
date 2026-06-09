@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 .wyldrift-landing[data-theme="dark"] {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #1a1a1a;
-  --text-primary: #ffffff;
-  --text-secondary: #b0b0b0;
-  --border: #333333;
+  --bg-primary: #0d0a08;
+  --bg-secondary: #14100c;
+  --text-primary: #f2ebe0;
+  --text-secondary: #9a8c82;
+  --border: rgba(212, 175, 55, 0.2);
   --accent: #d4af37;
-  --glass: rgba(26, 26, 26, 0.72);
-  --shadow: rgba(0, 0, 0, 0.45);
+  --glass: rgba(20, 16, 12, 0.78);
+  --shadow: rgba(0, 0, 0, 0.5);
 }
 
 .wyldrift-landing[data-theme="light"] {

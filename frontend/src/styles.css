@@ -1,17 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap");
 
 :root {
-  --color-cream: #0c0614;
-  --color-charcoal: #f4eeff;
-  --color-gold: #e8c547;
-  --color-gold-soft: #f5d76e;
-  --color-purple: #7c3aed;
-  --color-purple-deep: #2a1045;
-  --color-purple-mid: #4c1d95;
-  --color-sage: #b794f6;
-  --color-muted: #9d8fb8;
-  --color-border: rgba(232, 197, 71, 0.22);
-  --color-tile-fallback: #1a0f2e;
+  --color-cream: #0d0a08;
+  --color-charcoal: #f2ebe0;
+  --color-gold: #d4af37;
+  --color-gold-soft: #e8d5a3;
+  --color-purple: #8b5a3c;
+  --color-purple-deep: #0d0a08;
+  --color-purple-mid: #2c1a0e;
+  --color-sage: #c4a574;
+  --color-muted: #9a8c82;
+  --color-border: rgba(212, 175, 55, 0.22);
+  --color-tile-fallback: #1a120c;
 
   --font-display: "Syne", system-ui, sans-serif;
   --font-body: "Outfit", system-ui, sans-serif;
@@ -21,12 +21,12 @@
 
   --card-radius: 14px;
   --section-padding: clamp(3rem, 8vw, 7rem) 0;
-  --bg: #0a0a0a;
-  --surface: #111111;
-  --card: #161616;
-  --gold: #c9a84c;
-  --text: #f5f0e8;
-  --muted: #6b6b6b;
+  --bg: #0d0a08;
+  --surface: #14100c;
+  --card: #1a1510;
+  --gold: #d4af37;
+  --text: #f2ebe0;
+  --muted: #9a8c82;
 
   --ink: var(--text);
   --line: rgba(201, 168, 76, 0.18);
@@ -56,9 +56,9 @@ html {
 
 body {
   background:
-    radial-gradient(1000px 620px at 15% 0%, rgba(201, 168, 76, 0.16), transparent 60%),
-    radial-gradient(820px 560px at 90% 10%, rgba(201, 168, 76, 0.08), transparent 62%),
-    radial-gradient(900px 700px at 50% 120%, rgba(37, 211, 102, 0.06), transparent 58%),
+    radial-gradient(1000px 620px at 12% -5%, rgba(212, 175, 55, 0.14), transparent 58%),
+    radial-gradient(820px 560px at 92% 8%, rgba(114, 47, 55, 0.12), transparent 60%),
+    radial-gradient(900px 700px at 50% 110%, rgba(92, 61, 46, 0.1), transparent 55%),
     var(--paper);
   color: var(--ink);
   font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -6713,30 +6713,32 @@ body { background: radial-gradient(...), var(--paper); color: var(--ink); font-f
 .product-card { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); ... }
 */
 
-/* —— Gen Z purple + gold storefront (.store-genzy) —— */
+/* —— Wyldrift aesthetic storefront (.store-genzy) —— */
 
 body:has(.store-genzy) {
   background:
-    radial-gradient(ellipse 120% 80% at 100% -20%, rgba(124, 58, 237, 0.35), transparent 55%),
-    radial-gradient(ellipse 90% 60% at 0% 40%, rgba(232, 197, 71, 0.12), transparent 50%),
-    linear-gradient(165deg, #0c0614 0%, #150a24 38%, #0f0818 100%);
-  color: #f4eeff;
+    radial-gradient(ellipse 110% 75% at 100% -18%, rgba(114, 47, 55, 0.2), transparent 52%),
+    radial-gradient(ellipse 85% 55% at 0% 38%, rgba(212, 175, 55, 0.11), transparent 48%),
+    radial-gradient(ellipse 70% 45% at 50% 105%, rgba(92, 61, 46, 0.14), transparent 50%),
+    linear-gradient(168deg, #0d0a08 0%, #14100c 42%, #0f0b08 100%);
+  color: var(--color-charcoal);
 }
 
 /* Beat body:has(.store-theme-light) { color: #141414 } */
 body:has(.store-theme-light):has(.store-genzy) {
   background:
-    radial-gradient(ellipse 120% 80% at 100% -20%, rgba(124, 58, 237, 0.35), transparent 55%),
-    radial-gradient(ellipse 90% 60% at 0% 40%, rgba(232, 197, 71, 0.12), transparent 50%),
-    linear-gradient(165deg, #0c0614 0%, #150a24 38%, #0f0818 100%);
-  color: #f4eeff;
+    radial-gradient(ellipse 110% 75% at 100% -18%, rgba(114, 47, 55, 0.2), transparent 52%),
+    radial-gradient(ellipse 85% 55% at 0% 38%, rgba(212, 175, 55, 0.11), transparent 48%),
+    radial-gradient(ellipse 70% 45% at 50% 105%, rgba(92, 61, 46, 0.14), transparent 50%),
+    linear-gradient(168deg, #0d0a08 0%, #14100c 42%, #0f0b08 100%);
+  color: var(--color-charcoal);
 }
 
 .store-genzy.store-theme-light {
-  --text: #f4eeff;
-  --ink: #f4eeff;
-  --muted: #b8a8d4;
-  color: #f4eeff;
+  --text: var(--color-charcoal);
+  --ink: var(--color-charcoal);
+  --muted: var(--color-muted);
+  color: var(--color-charcoal);
 }
 
 .store-genzy.store-editorial h1,
@@ -6750,7 +6752,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .store-marquee {
-  background: linear-gradient(90deg, var(--color-purple-deep), var(--color-purple-mid));
+  background: linear-gradient(90deg, var(--color-purple-deep) 0%, #1a120c 45%, var(--color-purple-mid) 100%);
   color: var(--color-gold-soft);
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -6760,7 +6762,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 
 .store-genzy .store-header--editorial.store-header--scrolled,
 .store-genzy .store-header--editorial {
-  background: rgba(12, 6, 20, 0.82);
+  background: rgba(13, 10, 8, 0.84);
   backdrop-filter: blur(16px);
   border-bottom-color: var(--color-border);
 }
@@ -6770,12 +6772,12 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .btn-style-primary {
-  background: linear-gradient(135deg, var(--color-gold) 0%, #f0a830 100%);
-  color: #1a0a2e;
+  background: linear-gradient(135deg, var(--color-gold-soft) 0%, var(--color-gold) 55%, #b8942e 100%);
+  color: #1a1208;
   font-weight: 700;
   border-radius: 999px;
   letter-spacing: 0.14em;
-  box-shadow: 0 8px 28px rgba(232, 197, 71, 0.35);
+  box-shadow: 0 8px 28px rgba(212, 175, 55, 0.32);
 }
 
 .store-genzy .btn-style-primary:hover {
@@ -6791,7 +6793,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 .store-genzy .btn-editorial--ghost {
   border: 1px solid var(--color-border);
   color: var(--color-charcoal);
-  background: rgba(124, 58, 237, 0.15);
+  background: rgba(92, 61, 46, 0.18);
   border-radius: 999px;
 }
 
@@ -6805,7 +6807,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .editorial-hero-gold-line {
-  background: linear-gradient(90deg, var(--color-gold), var(--color-purple));
+  background: linear-gradient(90deg, var(--color-gold), var(--color-sage));
 }
 
 .store-genzy .editorial-hero-kicker {
@@ -6822,7 +6824,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 
 .store-genzy .editorial-hero-title em {
   font-style: normal;
-  background: linear-gradient(120deg, #fff 0%, var(--color-gold-soft) 55%, var(--color-sage) 100%);
+  background: linear-gradient(120deg, #fff8f0 0%, var(--color-gold-soft) 50%, #c4a574 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -6839,7 +6841,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 
 .store-genzy .trust-strip {
   border-block: 1px solid var(--color-border);
-  background: rgba(42, 16, 69, 0.45);
+  background: rgba(26, 18, 12, 0.55);
 }
 
 .store-genzy .trust-strip-title {
@@ -6865,7 +6867,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .catalog-search {
-  background: rgba(26, 15, 46, 0.85);
+  background: rgba(20, 14, 10, 0.88);
   border: 1px solid var(--color-border);
   border-radius: 999px;
 }
@@ -6875,8 +6877,8 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .catalog-search__submit {
-  background: var(--color-purple);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-purple-mid) 0%, var(--color-purple) 100%);
+  color: #f2ebe0;
   border-radius: 999px;
 }
 
@@ -6893,7 +6895,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 
 .store-genzy .category-portrait-tile--active .category-portrait-tile-visual {
   border-color: var(--color-gold);
-  box-shadow: 0 0 0 1px var(--color-gold), 0 12px 32px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 0 0 1px var(--color-gold), 0 12px 32px rgba(212, 175, 55, 0.22);
 }
 
 .store-genzy .category-portrait-tile-name {
@@ -6908,7 +6910,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .wz-product-card {
-  background: rgba(26, 15, 46, 0.55);
+  background: rgba(20, 14, 10, 0.72);
   border: 1px solid var(--color-border);
   border-radius: calc(var(--card-radius) + 4px);
   padding: 12px;
@@ -6916,8 +6918,8 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .wz-product-card:hover {
-  border-color: rgba(232, 197, 71, 0.55);
-  box-shadow: 0 16px 40px rgba(124, 58, 237, 0.25);
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(212, 175, 55, 0.12);
   transform: translateY(-4px);
 }
 
@@ -6942,14 +6944,14 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .product-type-badge {
-  background: rgba(12, 6, 20, 0.75);
+  background: rgba(13, 10, 8, 0.8);
   color: var(--color-gold-soft);
   border: 1px solid var(--color-border);
 }
 
 .store-genzy .product-type-badge--combo {
-  background: linear-gradient(135deg, var(--color-purple), var(--color-purple-mid));
-  color: #fff;
+  background: linear-gradient(135deg, #722f37 0%, var(--color-purple-mid) 100%);
+  color: #f2ebe0;
 }
 
 .store-genzy .editorial-product-tag {
@@ -7004,7 +7006,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .store-empty-panel {
-  background: rgba(26, 15, 46, 0.7);
+  background: rgba(20, 14, 10, 0.75);
   border: 1px dashed var(--color-border);
   border-radius: var(--card-radius);
 }
@@ -7019,7 +7021,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .style-sticky-bar {
-  background: linear-gradient(90deg, var(--color-purple-deep), var(--color-purple-mid));
+  background: linear-gradient(90deg, var(--color-purple-deep), #1f1610 50%, var(--color-purple-mid));
   border-top-color: var(--color-border);
 }
 
@@ -7036,13 +7038,13 @@ body:has(.store-theme-light):has(.store-genzy) {
 .store-genzy .detail-size-pill {
   border: 1px solid var(--color-border);
   color: var(--color-charcoal);
-  background: rgba(26, 15, 46, 0.6);
+  background: rgba(20, 14, 10, 0.65);
   border-radius: 999px;
 }
 
 .store-genzy .detail-size-pill--selected {
   border-color: var(--color-gold);
-  background: rgba(232, 197, 71, 0.15);
+  background: rgba(212, 175, 55, 0.14);
   color: var(--color-gold-soft);
 }
 
@@ -7065,7 +7067,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 
 .store-genzy .store-skeleton-card,
 .store-genzy .store-skeleton-line {
-  background: linear-gradient(90deg, rgba(42, 16, 69, 0.5), rgba(124, 58, 237, 0.2), rgba(42, 16, 69, 0.5));
+  background: linear-gradient(90deg, rgba(26, 18, 12, 0.55), rgba(212, 175, 55, 0.12), rgba(26, 18, 12, 0.55));
 }
 
 /* Colour swatches */
@@ -7130,12 +7132,12 @@ body:has(.store-theme-light):has(.store-genzy) {
 
 .color-swatch--selected {
   border-color: var(--color-gold);
-  box-shadow: 0 0 0 2px rgba(232, 197, 71, 0.45);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.4);
   transform: scale(1.1);
 }
 
 .store-genzy .how-it-works {
-  background: rgba(26, 15, 46, 0.5);
+  background: rgba(20, 14, 10, 0.58);
   border-top: 1px solid var(--color-border);
 }
 
@@ -7169,10 +7171,10 @@ body:has(.store-theme-light):has(.store-genzy) {
   }
 }
 
-/* —— Genzy text contrast (fix hardcoded dark ink on purple bg) —— */
+/* —— Storefront text contrast on warm dark bg —— */
 .store-genzy,
 .store-genzy.store-editorial {
-  color: #f4eeff;
+  color: var(--color-charcoal);
 }
 
 .store-genzy .section-heading .section-kicker,
@@ -7193,7 +7195,7 @@ body:has(.store-theme-light):has(.store-genzy) {
 .store-genzy .detail-accordion-content p,
 .store-genzy .store-product-detail-desc p,
 .store-genzy .wa-chat-time {
-  color: #b8a8d4;
+  color: var(--color-muted);
 }
 
 .store-genzy .editorial-hero--v2 .editorial-hero-sub-lead {
@@ -7215,15 +7217,15 @@ body:has(.store-theme-light):has(.store-genzy) {
 .store-genzy .detail-breadcrumb [aria-current="page"],
 .store-genzy .detail-accordion-trigger,
 .store-genzy .color-swatch-picker__value {
-  color: #f4eeff;
+  color: var(--color-charcoal);
 }
 
 .store-genzy .store-product-detail-kicker {
-  color: #b8a8d4;
+  color: var(--color-muted);
 }
 
 .store-genzy .store-product-detail-price-was {
-  color: #9d8fb8;
+  color: var(--color-muted);
 }
 
 .store-genzy .detail-breadcrumb a:hover,
@@ -7237,12 +7239,12 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .store-product-detail-noimg {
-  color: #b8a8d4;
+  color: var(--color-muted);
 }
 
 .store-genzy .catalog-search__submit {
-  background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-purple-mid) 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-purple-mid) 0%, var(--color-purple) 100%);
+  color: #f2ebe0;
 }
 
 .store-genzy .catalog-search__submit:hover {
@@ -7251,17 +7253,17 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .detail-size-pill--selected {
-  background: rgba(232, 197, 71, 0.18);
+  background: rgba(212, 175, 55, 0.16);
   color: var(--color-gold-soft);
   border-color: var(--color-gold);
 }
 
 .store-genzy .store-header--editorial.store-header--scrolled {
-  background: rgba(12, 6, 20, 0.92);
+  background: rgba(13, 10, 8, 0.92);
 }
 
 .store-genzy .how-it-works {
-  background: rgba(26, 15, 46, 0.65);
+  background: rgba(20, 14, 10, 0.65);
 }
 
 .store-genzy .wyldrift-footer {
@@ -7270,20 +7272,20 @@ body:has(.store-theme-light):has(.store-genzy) {
 
 .store-genzy .wyldrift-footer__brand-link,
 .store-genzy .wyldrift-footer__brand-name {
-  color: #f4eeff;
+  color: var(--color-charcoal);
 }
 
 .store-genzy .wyldrift-footer__brand-the {
-  color: rgba(244, 238, 255, 0.55);
+  color: rgba(242, 235, 224, 0.55);
 }
 
 .store-genzy .wyldrift-footer__sub-lead {
-  color: rgba(244, 238, 255, 0.5);
+  color: rgba(242, 235, 224, 0.5);
 }
 
 .store-genzy .wyldrift-footer__blurb,
 .store-genzy .wyldrift-footer__copy {
-  color: rgba(244, 238, 255, 0.62);
+  color: rgba(242, 235, 224, 0.62);
 }
 
 .store-genzy .wyldrift-footer__tagline,
@@ -7292,42 +7294,42 @@ body:has(.store-theme-light):has(.store-genzy) {
 }
 
 .store-genzy .color-swatch-picker__label {
-  color: #b8a8d4;
+  color: var(--color-muted);
 }
 
 .store-genzy .editorial-product-price-was {
-  color: #9d8fb8;
+  color: var(--color-muted);
 }
 
 .store-genzy .editorial-product-price,
 .store-genzy .editorial-product-price > span:not(.editorial-product-price-was) {
-  color: #f4eeff;
+  color: var(--color-charcoal);
 }
 
 .store-genzy .trust-strip-title {
-  color: #f4eeff;
+  color: var(--color-charcoal);
 }
 
 .store-genzy .detail-combo-list,
 .store-genzy .detail-combo-desc-block p {
-  color: #d4c8e8;
+  color: rgba(242, 235, 224, 0.72);
 }
 
 /* WhatsApp demo bubbles keep light surfaces → use dark ink */
 .store-genzy .wa-chat-bubble--business,
 .store-genzy .wa-chat-bubble--bot,
 .store-genzy .wa-chat-bubble--user {
-  color: #1a1028;
+  color: #1a1208;
 }
 
 .store-genzy input,
 .store-genzy select,
 .store-genzy textarea {
-  color: #f4eeff;
+  color: var(--color-charcoal);
 }
 
 .store-genzy .catalog-search__input::placeholder {
-  color: #9d8fb8;
+  color: var(--color-muted);
 }
 
 /* —— Glitter starfield background —— */
@@ -7365,7 +7367,7 @@ body:has(.store-theme-light):has(.store-genzy) {
     radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.85), transparent),
     radial-gradient(1.5px 1.5px at 38% 62%, rgba(232, 197, 71, 0.55), transparent),
     radial-gradient(1px 1px at 72% 24%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 88% 78%, rgba(183, 148, 246, 0.65), transparent),
+    radial-gradient(1px 1px at 88% 78%, rgba(212, 175, 55, 0.65), transparent),
     radial-gradient(1.5px 1.5px at 22% 88%, rgba(255, 255, 255, 0.5), transparent),
     radial-gradient(1px 1px at 55% 12%, rgba(232, 197, 71, 0.45), transparent),
     radial-gradient(1px 1px at 94% 42%, rgba(255, 255, 255, 0.6), transparent);
@@ -7379,7 +7381,7 @@ body:has(.store-theme-light):has(.store-genzy) {
     radial-gradient(1.5px 1.5px at 8% 44%, rgba(255, 255, 255, 0.9), transparent),
     radial-gradient(2px 2px at 28% 22%, rgba(245, 215, 110, 0.75), transparent),
     radial-gradient(1px 1px at 48% 68%, rgba(255, 255, 255, 0.65), transparent),
-    radial-gradient(2px 2px at 66% 8%, rgba(183, 148, 246, 0.8), transparent),
+    radial-gradient(2px 2px at 66% 8%, rgba(212, 175, 55, 0.8), transparent),
     radial-gradient(1.5px 1.5px at 82% 58%, rgba(255, 255, 255, 0.7), transparent),
     radial-gradient(1px 1px at 18% 72%, rgba(232, 197, 71, 0.6), transparent),
     radial-gradient(2px 2px at 92% 86%, rgba(255, 255, 255, 0.55), transparent);
@@ -7395,7 +7397,7 @@ body:has(.store-theme-light):has(.store-genzy) {
     radial-gradient(1.5px 1.5px at 58% 18%, rgba(255, 255, 255, 0.85), transparent),
     radial-gradient(2px 2px at 76% 72%, rgba(245, 215, 110, 0.9), transparent),
     radial-gradient(2px 2px at 6% 82%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(2.5px 2.5px at 88% 28%, rgba(183, 148, 246, 0.95), transparent);
+    radial-gradient(2.5px 2.5px at 88% 28%, rgba(212, 175, 55, 0.95), transparent);
   animation: store-stars-drift-near 40s linear infinite, store-stars-twinkle 3.2s ease-in-out infinite 1.2s;
 }
 
@@ -7407,7 +7409,7 @@ body:has(.store-theme-light):has(.store-genzy) {
     radial-gradient(ellipse 4px 6px at 45% 55%, rgba(232, 197, 71, 0.85), transparent 72%),
     radial-gradient(ellipse 3px 4px at 70% 20%, rgba(255, 255, 255, 0.8), transparent 70%),
     radial-gradient(ellipse 5px 7px at 85% 65%, rgba(245, 215, 110, 0.75), transparent 72%),
-    radial-gradient(ellipse 3px 5px at 12% 75%, rgba(183, 148, 246, 0.9), transparent 70%),
+    radial-gradient(ellipse 3px 5px at 12% 75%, rgba(212, 175, 55, 0.9), transparent 70%),
     radial-gradient(ellipse 4px 6px at 55% 88%, rgba(255, 255, 255, 0.7), transparent 72%),
     radial-gradient(ellipse 3px 4px at 92% 12%, rgba(232, 197, 71, 0.8), transparent 70%);
   background-size: 100% 100%;
@@ -7424,7 +7426,7 @@ body:has(.store-theme-light):has(.store-genzy) {
   background-image:
     radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.35) 0%, transparent 45%),
     radial-gradient(circle at 75% 25%, rgba(232, 197, 71, 0.25) 0%, transparent 40%),
-    radial-gradient(circle at 60% 80%, rgba(124, 58, 237, 0.2) 0%, transparent 50%);
+    radial-gradient(circle at 60% 80%, rgba(114, 47, 55, 0.18) 0%, transparent 50%);
   animation: store-glitter-glow 8s ease-in-out infinite;
 }
 
