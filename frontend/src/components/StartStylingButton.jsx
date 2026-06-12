@@ -5,7 +5,7 @@ export default function StartStylingButton({
   href,
   fullWidth = false,
   className = "",
-  children = "Start Styling →",
+  children = "Order on WhatsApp →",
   onClick,
   disabled = false,
   ...rest

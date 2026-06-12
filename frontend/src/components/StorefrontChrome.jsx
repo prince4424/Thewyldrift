@@ -4,11 +4,11 @@ import WyldriftLogo from "./WyldriftLogo.jsx";
 import WyldriftFooter from "./WyldriftFooter.jsx";
 import StartStylingButton from "./StartStylingButton.jsx";
 const MARQUEE_TEXT =
-  "✦ Purple & gold drops · Pick your colour on every fit · Order on WhatsApp · Ships across India ✦";
+  "✦ New collection launching soon · Fresh drops every week · Acid-wash tees & combo sets · Pick your colour · Order on WhatsApp · Ships across India ✦";
 
 export function StorefrontMarquee() {
   return (
-    <div className="store-marquee" aria-hidden="true">
+    <div className="store-marquee">
       <div className="store-marquee-track">
         <span>{MARQUEE_TEXT}</span>
         <span aria-hidden="true">{MARQUEE_TEXT}</span>

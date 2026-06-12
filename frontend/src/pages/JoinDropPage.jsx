@@ -92,7 +92,7 @@ export default function JoinDropPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--accent)]">Join the drop</p>
           <h1 className="mt-3 text-3xl font-bold sm:text-4xl">Rules &amp; Guidelines</h1>
           <p className="mx-auto mt-4 max-w-xl text-[var(--text-secondary)]">
-            Read before you join the WYLDRIFT release. Fair drops, fast Tricity delivery, zero drama.
+            Everything you need before joining the next Wyldrift drop — fair releases, fast delivery, zero drama.
           </p>
         </div>
 

@@ -2,7 +2,8 @@ import { PRODUCT_CATEGORIES } from "./categories.js";
 
 export const WHATSAPP_BUSINESS_NUMBER = "917719672237";
 
-const START_STYLING_MESSAGE = "Hey Wyldrift! 🔥 Just checked out your collection and I'm obsessed! Ready to order — can you help me out? 🛍️✨";
+const START_STYLING_MESSAGE =
+  "Hi The Wyldrift! I'd like to order from your new collection. Please share available colours, sizes and delivery options.";
 const HERO_SLIDESHOW_DEFAULT = [
   "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200",
   "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200",

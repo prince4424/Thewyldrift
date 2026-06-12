@@ -116,21 +116,21 @@ function EditorialHero({ slides, loading }) {
     <section className="editorial-hero editorial-hero--v2" aria-labelledby="hero-title">
       <div className="editorial-hero-content">
         <span className="editorial-hero-gold-line" aria-hidden="true" />
-        <p className="editorial-hero-kicker">New drops · Purple &amp; gold era</p>
+        <p className="editorial-hero-kicker">New collection · Drops weekly</p>
         <h1 id="hero-title" className="editorial-hero-title">
-          <em>Main character fits only.</em>
+          <em>Premium streetwear for your next era.</em>
         </h1>
         <div className="editorial-hero-copy">
-          <p className="editorial-hero-sub-lead">Every piece live from our studio</p>
+          <p className="editorial-hero-sub-lead">Acid-wash tees, combo sets &amp; limited-run fits</p>
           <p className="editorial-hero-sub-body">
-            Shop what we upload in admin — tap a colour, lock your size, slide into WhatsApp. No guesswork,
-            just the fit you picked.
+            Explore the latest drop, pick your colour and size, then order in one tap on WhatsApp. Real stock,
+            fast replies, delivered across India.
           </p>
         </div>
         <div className="editorial-hero-actions">
           <StartStylingButton />
           <a className="btn-editorial btn-editorial--ghost" href="#categories">
-            Browse Combos
+            Shop new arrivals
           </a>
         </div>
       </div>
@@ -230,9 +230,9 @@ function TrustStripItem({ item, clone = false }) {
 
 function TrustStrip() {
   const items = [
-    { title: "Curated Weekly", body: "New drops every Friday" },
-    { title: "WhatsApp Orders", body: "Chat to order, get instant updates" },
-    { title: "Hassle-Free Returns", body: "7-day easy exchange policy" },
+    { title: "Weekly New Drops", body: "Fresh acid-wash & street fits every week" },
+    { title: "Order on WhatsApp", body: "Pick colour & size — we confirm in minutes" },
+    { title: "Ships Across India", body: "COD available · Easy 7-day exchanges" },
   ];
 
   return (
@@ -368,7 +368,7 @@ function ProductCard({ product }) {
         ) : null}
         {detailTo ? (
           <Link to={detailTo} className="wz-product-card__view-link">
-            View details →
+            See full look →
           </Link>
         ) : null}
       </div>
@@ -398,10 +398,10 @@ function CatalogSearch({ query, onQueryChange, resultCount, onSubmit }) {
     <section className="catalog-search-section reveal" aria-label="Search the collection">
       <div className="catalog-search-section__head">
         <label htmlFor={inputId} className="catalog-search-section__label">
-          Find your style
+          Find your fit
         </label>
         {!hasQuery ? (
-          <p className="catalog-search-section__hint">Name, category, colour, or SKU</p>
+          <p className="catalog-search-section__hint">Search tees, combos, colours &amp; more</p>
         ) : (
           <p className="catalog-search-section__meta" role="status" aria-live="polite">
             {resultCount} {resultCount === 1 ? "piece" : "pieces"} match
@@ -427,7 +427,7 @@ function CatalogSearch({ query, onQueryChange, resultCount, onSubmit }) {
           name="q"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search combos, tees, denim…"
+          placeholder="Search streetwear, acid wash, combos…"
           autoComplete="off"
           enterKeyHint="search"
         />
@@ -483,9 +483,20 @@ export default function StorefrontPage() {
   const [query, setQuery] = useState("");
   const [pickedCategory, setPickedCategory] = useState(null);
   const [site, setSite] = useState({
-    homeCategoryTitle: "Shop by Style",
-    homeCategoryKicker: "Collections",
+    homeCategoryTitle: "Shop by Category",
+    homeCategoryKicker: "Explore",
   });
+
+  useEffect(() => {
+    document.title = "The Wyldrift — Premium Streetwear & Combo Sets | Order on WhatsApp";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) {
+      meta.setAttribute(
+        "content",
+        "Shop limited-edition acid wash tees, combo sets and streetwear at The Wyldrift. New collections drop weekly. Order on WhatsApp, delivered across India."
+      );
+    }
+  }, []);
 
   useEffect(() => {
     setHeroLoading(true);
@@ -536,7 +547,7 @@ export default function StorefrontPage() {
   }, [filtered, pickedCategory]);
 
   const gridProducts = pickedCategory ? itemsInPickedCategory : filtered;
-  const gridTitle = pickedCategory ? `Showing: ${pickedCategory}` : "All Styles";
+  const gridTitle = pickedCategory ? `${pickedCategory} Collection` : "Shop the Collection";
   const gridCount = gridProducts.length;
 
   useEffect(() => {
@@ -591,12 +602,12 @@ export default function StorefrontPage() {
         <section id="products" className="products-section" aria-labelledby="products-title">
           {pickedCategory ? (
             <button type="button" className="store-category-back" onClick={() => setPickedCategory(null)}>
-              ← All styles
+              ← View all styles
             </button>
           ) : null}
 
           <div className="products-section-heading">
-            <p className="products-section-kicker">Live from admin</p>
+            <p className="products-section-kicker">Just dropped</p>
             <h2 id="products-title" className="products-grid-title">
               <em>{gridTitle}</em>
             </h2>
@@ -617,8 +628,10 @@ export default function StorefrontPage() {
 
           {!productsLoading && products.length === 0 ? (
             <div className="store-empty-panel">
-              <p className="store-empty-title">Catalogue is updating</p>
-              <p className="store-empty-text">New pieces arrive weekly. Browse categories above or start styling on WhatsApp.</p>
+              <p className="store-empty-title">New collection landing soon</p>
+              <p className="store-empty-text">
+                The next drop is on its way. Message us on WhatsApp for early access, restock alerts and styling help.
+              </p>
               <StartStylingButton />
             </div>
           ) : null}
@@ -628,7 +641,9 @@ export default function StorefrontPage() {
               <p className="store-empty-title">
                 No styles found for &ldquo;{query.trim()}&rdquo;
               </p>
-              <p className="store-empty-text">Try browsing our combos or chat with us on WhatsApp</p>
+              <p className="store-empty-text">
+                Try another search or explore our combo sets — we&apos;ll help you find the right fit on WhatsApp.
+              </p>
               <StartStylingButton />
             </div>
           ) : null}

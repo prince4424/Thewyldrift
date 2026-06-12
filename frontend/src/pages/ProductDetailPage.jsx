@@ -59,6 +59,14 @@ export default function ProductDetailPage() {
   useScrollReveal([loading, product?.id]);
 
   useEffect(() => {
+    if (product?.productName) {
+      document.title = `${product.productName} — The Wyldrift | Order on WhatsApp`;
+      return;
+    }
+    document.title = "The Wyldrift — Premium Streetwear & Combo Sets | Order on WhatsApp";
+  }, [product?.productName]);
+
+  useEffect(() => {
     if (!id) {
       setLoading(false);
       setError("Missing product link.");
@@ -271,8 +279,11 @@ export default function ProductDetailPage() {
                       "Premium fabrics selected for comfort and longevity. Hand wash cold or gentle machine cycle. Do not bleach."}
                   </p>
                 </AccordionItem>
-                <AccordionItem id="delivery" title="Delivery info">
-                  <p>We ship across India · WhatsApp us for delivery estimates · Usually ships in 2–4 days</p>
+                <AccordionItem id="delivery" title="Delivery & returns">
+                  <p>
+                    Pan-India shipping in 2–4 business days. Cash on delivery on most orders. Message us on WhatsApp
+                    for exact delivery timelines and easy 7-day exchanges.
+                  </p>
                 </AccordionItem>
               </div>
 

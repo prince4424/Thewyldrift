@@ -46,10 +46,10 @@ export default function WyldriftFooter() {
           <p className="wyldrift-footer__tagline">
             <em>Wear what you mean.</em>
           </p>
-          <p className="wyldrift-footer__sub-lead">Curated combos &amp; singles</p>
+          <p className="wyldrift-footer__sub-lead">Premium streetwear &amp; combo sets</p>
           <p className="wyldrift-footer__blurb">
-            Limited-run coord sets and everyday staples — put together so getting dressed feels easy, not loud.
-            New pieces every week. Order on WhatsApp, delivered across India.
+            The Wyldrift is your destination for limited-run acid wash tees, coord sets and everyday street fits.
+            New collections drop weekly — choose your colour, order on WhatsApp, and get it delivered anywhere in India.
           </p>
         </div>
 

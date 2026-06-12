@@ -4,25 +4,25 @@ import StartStylingButton from "./StartStylingButton.jsx";
 const STEPS = [
   {
     num: "01",
-    title: "Browse on the site",
-    desc: "Scroll the live catalogue, tap a colour swatch, and peek every shade the team uploaded.",
+    title: "Explore the collection",
+    desc: "Browse new drops, preview every colourway, and lock in the size that fits your vibe.",
   },
   {
     num: "02",
     title: "Order on WhatsApp",
-    desc: "Hit Start Styling with your colour + size locked in — we confirm stock and delivery in chat.",
+    desc: "Tap Order on WhatsApp with your colour and size ready — we confirm stock and delivery in minutes.",
   },
   {
     num: "03",
     title: "Delivered to your door",
-    desc: "Usually 3–5 days across India. Pay on delivery available on most orders.",
+    desc: "Ships across India in 3–5 days. Cash on delivery available on most orders.",
   },
 ];
 
 const BUBBLES = [
   {
     type: "business",
-    text: "Hi! Welcome to The Wyldrift 👋\nWhat would you like today?\n• Combo sets\n• Single pieces\n• New arrivals",
+    text: "Hi! Welcome to The Wyldrift 👋\nReady to shop the new collection?\n• Combo sets\n• Acid wash tees\n• Latest drops",
     time: "10:32",
   },
   { type: "user", text: "I’d like a combo set — Size M", time: "10:33" },
@@ -71,12 +71,12 @@ export default function HowItWorksSection() {
   return (
     <section id="how-it-works" className="how-it-works" aria-labelledby="how-it-works-title">
       <div className="how-it-works-intro">
-        <span className="how-it-works-kicker">Simple ordering</span>
+        <span className="how-it-works-kicker">How to order</span>
         <h2 id="how-it-works-title" className="how-it-works-heading">
-          <em>How It Works</em>
+          <em>From browse to doorstep</em>
         </h2>
         <p className="how-it-works-lead">
-          Browse everything on the website. When you&apos;re ready, place your order in one WhatsApp chat — that&apos;s it.
+          No checkout forms. No waiting. Pick your fit on the site, confirm on WhatsApp, and we handle the rest.
         </p>
       </div>
 
@@ -133,7 +133,7 @@ export default function HowItWorksSection() {
       </div>
 
       <div className="how-it-works-footer">
-        <p className="how-it-works-footnote">Questions about sizing or delivery? Message us anytime.</p>
+        <p className="how-it-works-footnote">Need help with sizing, styling or delivery? Message us anytime — we reply fast.</p>
         <StartStylingButton className="btn-style-primary--how-it-works" />
       </div>
     </section>
