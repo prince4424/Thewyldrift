@@ -1,6 +1,6 @@
 export const TOKEN_KEY = "thewyldriftAdminToken";
 
-const DEFAULT_API_BASE = "http://localhost:8080";
+const DEFAULT_API_BASE = "";
 
 /** Base URL for `/api/...` (no trailing slash). Set `VITE_API_URL` in `.env` when the API is not same-origin. */
 export function getApiBase() {
